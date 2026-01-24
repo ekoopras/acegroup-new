@@ -8,6 +8,7 @@ class ServiceMasuk extends Model
 {
     protected $fillable = [
         'category_id',
+        'nama_barang',
         'nama_client',
         'nomor_wa',
         'tanggal_masuk',

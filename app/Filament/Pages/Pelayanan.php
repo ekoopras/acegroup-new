@@ -10,6 +10,16 @@ use Illuminate\Support\Facades\DB;
 use App\Models\DataClient;
 use App\Models\ServiceMasuk;
 use App\Models\Category;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Actions\Action;
+
 
 class Pelayanan extends Page implements Forms\Contracts\HasForms
 {
@@ -18,9 +28,16 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
     protected static ?string $navigationLabel = 'Pelayanan';
     protected static ?string $navigationGroup = 'Transaksi';
-    protected static ?string $title = 'Pelayanan Service';
+    protected static ?string $title = '';
+    public ?ServiceMasuk $servicePreview = null;
+    public bool $showPreviewModal = false;
+    public array $serviceIds = [];
+
+
 
     protected static string $view = 'filament.pages.pelayanan';
+
+
 
     /**
      * State form
@@ -31,124 +48,246 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
     {
         $this->form->fill([
             'tanggal_masuk' => now(),
+
+            // ⭐ WAJIB untuk repeater
+            'services' => [
+                [
+                    'tanggal_masuk' => now(),
+                ],
+            ],
         ]);
     }
+
 
     public function form(Form $form): Form
     {
         return $form
             ->statePath('data')
             ->schema([
-
-                /* =====================
-                 * DATA CLIENT
-                 * ===================== */
-                Forms\Components\Section::make('Data Client')
-                    ->description('Informasi pelanggan')
+                section::make()
                     ->schema([
-                        Forms\Components\TextInput::make('nama')
+                        TextInput::make('nama')
                             ->label('Nama Client')
-                            ->required()
-                            ->maxLength(100),
+                            ->required(),
 
-                        Forms\Components\TextInput::make('nomor_wa')
+                        TextInput::make('nomor_wa')
                             ->label('Nomor WhatsApp')
-                            ->required()
                             ->tel()
-                            ->helperText('Gunakan format 628xxxx'),
-                    ])
-                    ->columns(2),
+                            ->required(),
+                    ])->columns(2),
 
-                /* =====================
-                 * DATA SERVICE
-                 * ===================== */
-                Forms\Components\Section::make('Data Service Masuk')
-                    ->description('Detail perangkat & kerusakan')
+
+                section::make()
                     ->schema([
-                        Forms\Components\Select::make('category_id')
-                            ->label('Kategori')
-                            ->options(Category::query()->pluck('category', 'id'))
-                            ->searchable()
-                            ->required(),
 
-                        Forms\Components\DatePicker::make('tanggal_masuk')
-                            ->label('Tanggal Masuk')
-                            ->required(),
+                        Repeater::make('services')
+                            ->label('Barang / Service')
+                            ->defaultItems(1)
+                            ->minItems(1)
+                            ->addActionLabel('+ Tambah Barang')
+                            ->schema([
 
-                        Forms\Components\Textarea::make('kerusakan')
-                            ->label('Kerusakan')
-                            ->required()
-                            ->columnSpanFull(),
+                                // GRID UTAMA DALAM REPEATER
+                                Grid::make([
+                                    'default' => 1,
+                                    'md' => 3, // desktop 3 kolom
+                                ])->schema([
 
-                        Forms\Components\CheckboxList::make('perlengkapan')
-                            ->label('Perlengkapan')
-                            ->options([
-                                'tas' => 'Tas',
-                                'adaptor_charger' => 'Adaptor Charger',
-                                'kabel_power' => 'Kabel Power',
-                                'kabel_usb_print' => 'Kabel USB Print',
-                                'kardus' => 'Kardus',
-                                'battrai' => 'Battrai',
-                                'kesing_kanan' => 'Kesing Kanan',
-                                'kesing_kiri' => 'Kesing Kiri',
-                                'usb_data' => 'USB Data',
+                                    /**
+                                     * =====================
+                                     * KIRI (LEBIH LEBAR)
+                                     * =====================
+                                     */
+                                    Section::make()
+                                        ->columnSpan([
+                                            'default' => 1,
+                                            'md' => 2,
+                                        ])
+                                        ->schema([
+
+                                            // DATA BARANG
+                                            Section::make()
+                                                ->schema([
+                                                    Select::make('category_id')
+                                                        ->label('Kategori')
+                                                        ->options(Category::pluck('category', 'id'))
+                                                        ->searchable()
+                                                        ->required(),
+
+                                                    TextInput::make('nama_barang')
+                                                        ->label('Nama Barang')
+                                                        ->required(),
+
+                                                    DatePicker::make('tanggal_masuk')
+                                                        ->label('Tanggal Masuk')
+                                                        ->required(),
+                                                ])
+                                                ->columns(3),
+
+                                            // KERUSAKAN & KETERANGAN
+                                            Section::make()
+                                                ->schema([
+                                                    Textarea::make('kerusakan')
+                                                        ->label('Kerusakan')
+                                                        ->rows(5),
+
+                                                    Textarea::make('keterangan')
+                                                        ->label('Keterangan')
+                                                        ->rows(5),
+                                                ])
+                                                ->columns(2),
+                                        ]),
+
+                                    /**
+                                     * =====================
+                                     * KANAN
+                                     * =====================
+                                     */
+                                    Section::make('')
+                                        ->columnSpan([
+                                            'default' => 1,
+                                            'md' => 1,
+                                        ])
+                                        ->schema([
+                                            CheckboxList::make('perlengkapan')
+                                                ->label('')
+                                                ->options([
+                                                    'tas' => 'Tas',
+                                                    'adaptor_charger' => 'Adaptor Charger',
+                                                    'kabel_power' => 'Kabel Power',
+                                                    'kabel_usb_print' => 'Kabel USB Print',
+                                                    'kardus' => 'Kardus',
+                                                    'battrai' => 'Battrai',
+                                                    'kesing_kanan' => 'Kesing Kanan',
+                                                    'kesing_kiri' => 'Kesing Kiri',
+                                                    'usb_data' => 'USB Data',
+                                                ])
+                                                ->columns([
+                                                    'default' => 2,
+                                                    'md' => 1,
+                                                ]),
+                                        ]),
+                                ]),
                             ])
-                            ->columns(3),
 
-                        Forms\Components\Textarea::make('keterangan')
-                            ->label('Keterangan Tambahan')
-                            ->columnSpanFull(),
+
                     ]),
+
+
             ]);
     }
 
-    /**
-     * Submit form
-     */
+
+
+
     public function submit(): void
     {
         $this->form->validate();
 
-        $service = null;
+        // reset state
+        $this->servicePreview = null;
+        $this->serviceIds = [];
 
-        DB::transaction(function () use (&$service) {
+        DB::transaction(function () {
 
-            $client = DataClient::create([
-                'nama' => $this->data['nama'],
-                'nomor_wa' => $this->data['nomor_wa'],
-            ]);
+            // 1️⃣ CLIENT (ANTI DUPLIKAT WA)
+            $client = DataClient::firstOrCreate(
+                ['nomor_wa' => $this->data['nomor_wa']],
+                ['nama' => $this->data['nama']]
+            );
 
-            $service = ServiceMasuk::create([
-                'category_id' => $this->data['category_id'],
-                'nama_client' => $client->nama,
-                'nomor_wa' => $client->nomor_wa,
-                'tanggal_masuk' => $this->data['tanggal_masuk'],
-                'kerusakan' => $this->data['kerusakan'],
-                'perlengkapan' => $this->data['perlengkapan'] ?? [],
-                'keterangan' => $this->data['keterangan'] ?? null,
-            ]);
+            // 2️⃣ LOOP BARANG
+            foreach ($this->data['services'] as $service) {
+
+                $createdService = ServiceMasuk::create([
+                    'category_id'   => $service['category_id'],
+                    'nama_barang'   => $service['nama_barang'],
+                    'nama_client'   => $client->nama,
+                    'nomor_wa'      => $client->nomor_wa,
+                    'tanggal_masuk' => $service['tanggal_masuk'],
+                    'kerusakan'     => $service['kerusakan'] ?? null,
+                    'perlengkapan'  => $service['perlengkapan'] ?? [],
+                    'keterangan'    => $service['keterangan'] ?? null,
+                ]);
+
+                // simpan semua ID (buat print)
+                $this->serviceIds[] = $createdService->id;
+
+                // ambil satu untuk preview
+                if ($this->servicePreview === null) {
+                    $this->servicePreview = $createdService;
+                }
+            }
         });
 
-        // 🔥 WAJIB load relasi
-        $service->load('category');
-
-        // URL WhatsApp
-        $waUrl = $this->sendWhatsapp($service);
+        // ⛑️ AMAN DARI NULL
+        if ($this->servicePreview) {
+            $this->servicePreview->load('category');
+        }
 
         Notification::make()
             ->title('Berhasil')
-            ->body('Data pelayanan berhasil disimpan')
+            ->body('Semua barang berhasil disimpan')
             ->success()
             ->send();
 
+        // tampilkan modal preview
+        $this->mountAction('preview');
+
+        // reset form + default 1 barang
         $this->reset('data');
 
-        // 🔥 Buka WA + Print
-        $this->js("
-        window.open('{$waUrl}', '_blank');
-        window.location.href = '" . route('service.print', $service->id) . "';
-    ");
+        $this->form->fill([
+            'services' => [
+                [
+                    'tanggal_masuk' => now(),
+                ],
+            ],
+        ]);
     }
+
+
+
+
+
+    protected function getActions(): array
+    {
+        return [
+            Action::make('preview')
+                ->modalHeading('Data Service Berhasil Disimpan')
+                ->modalWidth('lg')
+                ->modalSubmitAction(false)
+                ->modalCancelAction(false)
+                ->modalActions([
+
+                    // 🖨 PRINT SEMUA BARANG (TAB BARU)
+                    Action::make('print')
+                        ->label('🖨 Print Semua')
+                        ->action(function () {
+                            foreach ($this->serviceIds as $id) {
+                                $this->js(
+                                    "window.open('" . route('service.print', $id) . "', '_blank');"
+                                );
+                            }
+                        }),
+
+                    // 📲 WHATSAPP
+                    Action::make('wa')
+                        ->label('📲 Kirim WhatsApp')
+                        ->color('success')
+                        ->url(fn() => $this->sendWhatsapp($this->servicePreview))
+                        ->openUrlInNewTab(),
+
+                ])
+                ->modalContent(fn() => view('filament.service.preview', [
+                    'service' => $this->servicePreview,
+                ])),
+        ];
+    }
+
+
+
+
 
 
     private function sendWhatsapp(ServiceMasuk $service): string

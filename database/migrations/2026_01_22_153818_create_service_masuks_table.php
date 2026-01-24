@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('service_masuks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained()->cascadeOnDelete();
+            $table->string('nama_barang');
             $table->string('nama_client');
             $table->string('nomor_wa');
             $table->date('tanggal_masuk');

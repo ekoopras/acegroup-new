@@ -32,6 +32,10 @@ class ServiceMasukResource extends Resource
                     ->searchable()
                     ->required(),
 
+                Forms\Components\TextInput::make('nama_barang')
+                    ->label('Nama Barang')
+                    ->required(),
+
                 Forms\Components\TextInput::make('nama_client')
                     ->label('Nama Client')
                     ->required(),
@@ -77,6 +81,8 @@ class ServiceMasukResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('nama_barang')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('tanggal_masuk')
                     ->label('Masuk')
                     ->date('d M Y')

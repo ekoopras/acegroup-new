@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('data_clients', function (Blueprint $table) {
             $table->id();
             $table->string('nama');
-            $table->string('nomor_wa');
+            $table->string('nomor_wa')->unique();
             $table->timestamps();
         });
     }

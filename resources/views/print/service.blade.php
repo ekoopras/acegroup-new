@@ -17,6 +17,7 @@
     <hr>
 
     <p><strong>Nama:</strong> {{ $service->nama_client }}</p>
+    <p><strong>Nama:</strong> {{ $service->nama_barang }}</p>
     <p><strong>WhatsApp:</strong> {{ $service->nomor_wa }}</p>
     <p><strong>Tanggal Masuk:</strong> {{ $service->tanggal_masuk->format('d-m-Y') }}</p>
     <p><strong>Kategori:</strong> {{ $service->category->category }}</p>
@@ -40,5 +41,6 @@
     <p>Terima kasih telah menggunakan layanan kami</p>
 
 </body>
+
 
 </html>
