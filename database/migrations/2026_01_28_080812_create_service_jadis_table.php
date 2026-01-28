@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('service_masuks', function (Blueprint $table) {
+        Schema::create('service_jadis', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained()->cascadeOnDelete();
             $table->string('nama_barang');
@@ -23,6 +23,10 @@ return new class extends Migration
             $table->text('kerusakan');
             $table->json('perlengkapan')->nullable();
             $table->text('keterangan')->nullable();
+            $table->date('tanggal_selesai');
+            $table->string('jasa_service');
+            $table->integer('biaya');
+            $table->text('catatan')->nullable();
             $table->timestamps();
         });
     }
@@ -32,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('service_masuks');
+        Schema::dropIfExists('service_jadis');
     }
 };

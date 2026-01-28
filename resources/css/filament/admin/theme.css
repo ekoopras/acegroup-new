@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@tailwind variants;
+@import '../../../../vendor/filament/filament/resources/css/base.css';
+
+@config 'tailwind.config.js';
+
+@layer components {
+    .fi-sidebar-nav {
+        @apply bg-white border-r border-gray-200;
+    }
+
+    .dark .fi-sidebar-nav {
+        @apply bg-gray-900 border-gray-800;
+    }
+
+    .fi-sidebar-header {
+        @apply border-r border-gray-200;
+    }
+
+    .dark .fi-sidebar-header {
+        @apply border-gray-800;
+    }
+
+    .fi-topbar {
+        @apply px-[30px] pt-[20px];
+    }
+
+    .fi-topbar nav {
+        @apply rounded-xl;
+    }
+}
