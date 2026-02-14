@@ -10,4 +10,28 @@ class DataClient extends Model
         'nama',
         'nomor_wa',
     ];
+
+    protected $casts = [
+        'services' => 'array',
+    ];
+
+    public function logServices()
+    {
+        return $this->hasMany(LogService::class);
+    }
+
+    public function serviceMasuks()
+    {
+        return $this->hasMany(ServiceMasuk::class);
+    }
+
+    public function serviceProses()
+    {
+        return $this->hasMany(ServiceProses::class);
+    }
+
+    public function serviceJadis()
+    {
+        return $this->hasMany(ServiceJadi::class);
+    }
 }

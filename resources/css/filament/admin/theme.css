@@ -23,11 +23,4 @@
         @apply border-gray-800;
     }
 
-    .fi-topbar {
-        @apply px-[30px] pt-[20px];
-    }
-
-    .fi-topbar nav {
-        @apply rounded-xl;
-    }
 }

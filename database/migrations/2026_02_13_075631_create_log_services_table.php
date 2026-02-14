@@ -11,25 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('service_jadis', function (Blueprint $table) {
+        Schema::create('log_services', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')
                 ->constrained()
                 ->cascadeOnDelete();
+
             $table->foreignId('data_client_id')
                 ->constrained()
                 ->cascadeOnDelete();
-            $table->string('nama_barang');
-            $table->string('nomor_surat')->unique();
-            $table->longText('qrcode')->nullable();
 
-            $table->date('tanggal_masuk');
-            $table->string('garansi')->nullable();
-            $table->date('tanggal_selesai')->nullable();
+            $table->string('nama_barang');
+
+            $table->date('tanggal_pengambilan');
 
             $table->json('services')->nullable();
 
             $table->unsignedBigInteger('total_biaya')->default(0);
+
+            $table->string('garansi')->nullable();
             $table->timestamps();
         });
     }
@@ -39,8 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('service_jadis');
+        Schema::dropIfExists('log_services');
     }
 };
-
-$table->foreignId('category_id')->constrained()->cascadeOnDelete();

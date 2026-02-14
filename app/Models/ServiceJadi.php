@@ -8,28 +8,31 @@ class ServiceJadi extends Model
 {
     protected $fillable = [
         'category_id',
+        'data_client_id',
         'nama_barang',
-        'nama_client',
-        'nomor_wa',
-        'tanggal_masuk',
-        'kerusakan',
-        'perlengkapan',
-        'keterangan',
         'nomor_surat',
         'qrcode',
+        'tanggal_masuk',
         'tanggal_selesai',
-        'jasa_service',
-        'biaya',
-        'catatan',
+        'garansi',
+        'services',
+        'total_biaya',
     ];
 
     protected $casts = [
         'tanggal_masuk' => 'date',
         'tanggal_selesai' => 'date',
+        'services' => 'array',
     ];
+
 
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function dataClient()
+    {
+        return $this->belongsTo(DataClient::class);
     }
 }

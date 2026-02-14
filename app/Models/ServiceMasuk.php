@@ -10,9 +10,8 @@ class ServiceMasuk extends Model
 {
     protected $fillable = [
         'category_id',
+        'data_client_id',
         'nama_barang',
-        'nama_client',
-        'nomor_wa',
         'tanggal_masuk',
         'kerusakan',
         'perlengkapan',
@@ -30,6 +29,12 @@ class ServiceMasuk extends Model
     {
         return $this->belongsTo(Category::class);
     }
+
+    public function dataClient()
+    {
+        return $this->belongsTo(DataClient::class);
+    }
+
 
     protected static function booted()
     {

@@ -7,6 +7,9 @@ use App\Filament\Resources\ServiceProsesResource\RelationManagers;
 use App\Models\ServiceJadi;
 use App\Models\ServiceProses;
 use Filament\Forms;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -55,7 +58,8 @@ class ServiceProsesResource extends Resource
                     ->searchable(),
 
 
-                Tables\Columns\TextColumn::make('nama_client')
+                Tables\Columns\TextColumn::make('dataClient.nama')
+                    ->label('Nama Client')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('tanggal_masuk')
@@ -101,38 +105,70 @@ class ServiceProsesResource extends Resource
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->form([
-                        Forms\Components\TextInput::make('jasa_service')
-                            ->label('Jasa Service')
+                        Select::make('garansi')
+                            ->options([
+                                '1_hari' => '1 Hari',
+                                '7_hari' => '7 Hari',
+                                '30_hari' => '30 Hari',
+                                '3_bulan' => '3 Bulan',
+                            ])
                             ->required(),
 
-                        Forms\Components\TextInput::make('biaya')
+                        Repeater::make('services')
+                            ->label('Daftar Service')
+                            ->schema([
+                                TextInput::make('service')
+                                    ->label('Jenis Service')
+                                    ->required(),
+
+                                TextInput::make('biaya')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->required()
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        $services = $get('../../services') ?? [];
+
+                                        $total = collect($services)->sum('biaya');
+
+                                        $set('../../total_biaya', $total);
+                                    }),
+                            ])
+                            ->columns(2)
+                            ->minItems(1),
+
+                        TextInput::make('total_biaya')
+                            ->label('Total Biaya')
                             ->numeric()
                             ->prefix('Rp')
-                            ->required(),
+                            ->readOnly()
+                            ->dehydrated(true),
 
-                        Forms\Components\Textarea::make('catatan')
-                            ->rows(2),
+
                     ])
                     ->action(function ($record, array $data) {
+
+                        $total = collect($data['services'] ?? [])
+                            ->sum('biaya');
+
                         ServiceJadi::create([
-                            'category_id'      => $record->category_id,
-                            'nama_barang'      => $record->nama_barang,
-                            'nama_client'      => $record->nama_client,
-                            'nomor_wa'         => $record->nomor_wa,
-                            'nomor_surat'      => $record->nomor_surat,
-                            'qrcode'           => $record->qrcode,
-                            'tanggal_masuk'    => $record->tanggal_masuk,
-                            'tanggal_selesai'  => now(),
-                            'kerusakan'        => $record->kerusakan,
-                            'jasa_service'     => $data['jasa_service'],
-                            'biaya'            => $data['biaya'],
-                            'catatan'          => $data['catatan'] ?? null,
+                            'category_id'     => $record->category_id,
+                            'data_client_id' => $record->data_client_id,
+                            'nama_barang'     => $record->nama_barang,
+                            'nomor_surat'     => $record->nomor_surat,
+                            'qrcode'          => $record->qrcode,
+                            'tanggal_masuk'   => $record->tanggal_masuk,
+                            'tanggal_selesai' => now(),
+                            'garansi'         => $data['garansi'],
+                            'services'        => $data['services'],
+                            'total_biaya'     => $total,
                         ]);
 
                         // hapus dari proses
                         $record->delete();
                     })
                     ->requiresConfirmation(),
+
 
                 Tables\Actions\EditAction::make(),
             ])

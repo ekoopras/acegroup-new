@@ -104,8 +104,8 @@ class ServiceMasukResource extends Resource
                     )
                     ->searchable(),
 
-
-                Tables\Columns\TextColumn::make('nama_client')
+                Tables\Columns\TextColumn::make('dataClient.nama')
+                    ->label('Nama Client')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('tanggal_masuk')
@@ -155,9 +155,8 @@ class ServiceMasukResource extends Resource
                         // ⬇️ pindahkan data
                         ServiceProses::create([
                             'category_id'   => $record->category_id,
+                            'data_client_id' => $record->data_client_id,
                             'nama_barang'   => $record->nama_barang,
-                            'nama_client'   => $record->nama_client,
-                            'nomor_wa'      => $record->nomor_wa,
                             'nomor_surat'   => $record->nomor_surat,
                             'qrcode'        => $record->qrcode,
                             'tanggal_masuk' => $record->tanggal_masuk,
@@ -175,7 +174,10 @@ class ServiceMasukResource extends Resource
                         ->label('WhatsApp')
                         ->icon('heroicon-o-chat-bubble-left-right')
                         ->color('success') // HIJAU
-                        ->url(fn($record) => 'https://wa.me/' . $record->nomor_wa, true)
+                        ->url(
+                            fn($record) =>
+                            'https://wa.me/' . $record->dataClient->nomor_wa
+                        )
                         ->openUrlInNewTab(),
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),

@@ -74,7 +74,7 @@ class DataClientResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\LogServicesRelationManager::class,
         ];
     }
 
@@ -83,7 +83,7 @@ class DataClientResource extends Resource
         return [
             'index' => Pages\ListDataClients::route('/'),
             //'create' => Pages\CreateDataClient::route('/create'),
-            //'edit' => Pages\EditDataClient::route('/{record}/edit'),
+            'edit' => Pages\EditDataClient::route('/{record}/edit'),
         ];
     }
 }

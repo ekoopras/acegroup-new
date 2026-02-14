@@ -27,7 +27,6 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
     protected static ?string $navigationLabel = 'Pelayanan';
-    protected static ?string $navigationGroup = 'Transaksi';
     protected static ?string $title = '';
     public ?ServiceMasuk $servicePreview = null;
     public bool $showPreviewModal = false;
@@ -202,8 +201,7 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
                 $createdService = ServiceMasuk::create([
                     'category_id'   => $service['category_id'],
                     'nama_barang'   => $service['nama_barang'],
-                    'nama_client'   => $client->nama,
-                    'nomor_wa'      => $client->nomor_wa,
+                    'data_client_id' => $client->id,
                     'tanggal_masuk' => $service['tanggal_masuk'],
                     'kerusakan'     => $service['kerusakan'] ?? null,
                     'perlengkapan'  => $service['perlengkapan'] ?? [],
@@ -292,8 +290,10 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
 
     private function sendWhatsapp(ServiceMasuk $service): string
     {
+        $service->load('dataClient', 'category');
+
         $text = urlencode(
-            "Halo {$service->nama_client},\n\n" .
+            "Halo {$service->dataClient->nama},\n\n" .
                 "Service Anda sudah kami terima.\n\n" .
                 "Kategori: {$service->category->category}\n" .
                 "Kerusakan: {$service->kerusakan}\n" .
@@ -301,6 +301,6 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
                 "Terima kasih 🙏"
         );
 
-        return "https://wa.me/{$service->nomor_wa}?text={$text}";
+        return "https://wa.me/{$service->dataClient->nomor_wa}?text={$text}";
     }
 }

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ServiceJadiResource\Pages;
 use App\Filament\Resources\ServiceJadiResource\RelationManagers;
+use App\Models\LogService;
 use App\Models\ServiceJadi;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -18,6 +19,7 @@ class ServiceJadiResource extends Resource
     protected static ?string $model = ServiceJadi::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Transaksi';
 
     public static function form(Form $form): Form
     {
@@ -35,13 +37,22 @@ class ServiceJadiResource extends Resource
 
                 Tables\Columns\TextColumn::make('nama_barang'),
 
-                Tables\Columns\TextColumn::make('nama_client'),
+                Tables\Columns\TextColumn::make('dataClient.nama')
+                    ->label('Nama Client')
+                    ->searchable(),
 
-                Tables\Columns\TextColumn::make('biaya')
-                    ->money('IDR', true),
+                Tables\Columns\TextColumn::make('total_biaya')
+                    ->money('IDR', locale: 'id')
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('tanggal_selesai')
                     ->date(),
+
+                Tables\Columns\ViewColumn::make('qrcode')
+                    ->label('QR')
+                    ->view('filament.tables.qrcode')
+                    //->tooltip(fn($record) => $record->nomor_surat)
+                    ->alignCenter(),
 
             ])
             ->filters([
@@ -49,6 +60,23 @@ class ServiceJadiResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->action(function ($record) {
+
+                        LogService::create([
+                            'category_id'         => $record->category_id,
+                            'data_client_id'      => $record->data_client_id,
+                            'nama_barang'         => $record->nama_barang,
+                            'tanggal_pengambilan' => now(),
+                            'services'            => $record->services,
+                            'total_biaya'         => $record->total_biaya,
+                            'garansi'             => $record->garansi,
+                        ]);
+
+                        $record->delete();
+                    })
+                    ->requiresConfirmation(),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
