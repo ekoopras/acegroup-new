@@ -10,4 +10,9 @@ class Category extends Model
         'category',
         'slug',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 }

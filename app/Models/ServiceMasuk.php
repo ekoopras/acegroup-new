@@ -39,21 +39,30 @@ class ServiceMasuk extends Model
     protected static function booted()
     {
         static::creating(function ($service) {
-            // Format tanggal: ddmmyy
+
             $date = now()->format('dmy');
 
-            // Hitung data hari ini
-            $countToday = DB::table('service_masuks')
-                ->whereDate('created_at', now()->toDateString())
-                ->count() + 1;
+            // Ambil nomor terakhir dari SEMUA tabel
+            $tables = ['service_masuks', 'service_proses', 'service_jadis'];
 
-            // Nomor urut 3 digit
-            $number = str_pad($countToday, 3, '0', STR_PAD_LEFT);
+            $lastNumbers = collect($tables)->map(function ($table) use ($date) {
+                return DB::table($table)
+                    ->where('nomor_surat', 'like', "S-{$date}-%")
+                    ->orderBy('nomor_surat', 'desc')
+                    ->value('nomor_surat');
+            });
 
-            // Nomor surat final
+            $maxNumber = $lastNumbers
+                ->filter()
+                ->map(fn($item) => (int) substr($item, -3))
+                ->max();
+
+            $nextNumber = $maxNumber ? $maxNumber + 1 : 1;
+
+            $number = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+
             $service->nomor_surat = "S-{$date}-{$number}";
 
-            // QR Code (base64 PNG)
             $service->qrcode = QrCode::format('svg')
                 ->size(250)
                 ->generate($service->nomor_surat);

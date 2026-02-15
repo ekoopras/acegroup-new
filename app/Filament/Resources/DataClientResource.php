@@ -61,7 +61,7 @@ class DataClientResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->button(),
+                Tables\Actions\EditAction::make()->button()->label('LogService'),
                 Tables\Actions\DeleteAction::make()->button(),
             ])
             ->bulkActions([

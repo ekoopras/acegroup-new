@@ -16,12 +16,15 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Resources\Components\Tabs\Tab;
 
 class ServiceProsesResource extends Resource
 {
     protected static ?string $model = ServiceProses::class;
+    protected static ?int $navigationSort = 2;
 
-    protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
+    protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
+
     protected static ?string $navigationLabel = 'Service Proses';
     protected static ?string $pluralLabel = 'Service Proses';
     protected static ?string $navigationGroup = 'Transaksi';
@@ -30,16 +33,18 @@ class ServiceProsesResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Textarea::make('keterangan')
-                    ->rows(2)
-                    ->columnSpanFull(),
 
                 Forms\Components\Select::make('status')
                     ->options([
                         'Proses' => 'Proses',
                         'Pending' => 'Pending',
+                        'Deal' => 'Deal',
                     ])
                     ->required(),
+
+                Forms\Components\Textarea::make('keterangan')
+                    ->rows(10)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -78,13 +83,20 @@ class ServiceProsesResource extends Resource
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'Proses' => 'warning',   // hijau
+                        'Pending' => 'danger',   // merah
+                        'Deal' => 'success',   // merah
+                        default => 'gray',
+                    })
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('keterangan')
                     ->wrap()
-                    ->lineClamp(3)
+                    //->lineClamp(3)
                     ->extraAttributes([
-                        'style' => 'max-width: 250px;',
+                        'style' => 'max-width: 280px;',
                     ])
                     ->searchable(),
 
@@ -100,17 +112,21 @@ class ServiceProsesResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\EditAction::make()->button(),
                 Tables\Actions\Action::make('jadi')
                     ->label('Jadi')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->form([
+
                         Select::make('garansi')
                             ->options([
-                                '1_hari' => '1 Hari',
-                                '7_hari' => '7 Hari',
-                                '30_hari' => '30 Hari',
+                                '4_hari' => '4 Hari',
+                                '2_minggu' => '2 Minggu',
+                                '1_bulan' => '1 Bulan',
                                 '3_bulan' => '3 Bulan',
+                                '1_tahun' => '1 Tahun',
+                                'None' => 'None',
                             ])
                             ->required(),
 
@@ -125,17 +141,37 @@ class ServiceProsesResource extends Resource
                                     ->numeric()
                                     ->minValue(0)
                                     ->required()
-                                    ->reactive()
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
+
                                         $services = $get('../../services') ?? [];
+                                        $subtotal = collect($services)->sum('biaya');
 
-                                        $total = collect($services)->sum('biaya');
+                                        $potongan = $get('../../potongan_biaya') ?? 0;
 
-                                        $set('../../total_biaya', $total);
+                                        $set('../../total_biaya', max($subtotal - $potongan, 0));
                                     }),
                             ])
                             ->columns(2)
                             ->minItems(1),
+
+                        // 🔥 Tambahan Potongan
+                        TextInput::make('potongan_biaya')
+                            ->label('Potongan Biaya')
+                            ->numeric()
+                            ->minValue(0)
+                            ->default(0)
+                            ->prefix('Rp')
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+
+                                $services = $get('services') ?? [];
+                                $subtotal = collect($services)->sum('biaya');
+
+                                $potongan = $state ?? 0;
+
+                                $set('total_biaya', max($subtotal - $potongan, 0));
+                            }),
 
                         TextInput::make('total_biaya')
                             ->label('Total Biaya')
@@ -144,16 +180,20 @@ class ServiceProsesResource extends Resource
                             ->readOnly()
                             ->dehydrated(true),
 
-
                     ])
+
                     ->action(function ($record, array $data) {
 
-                        $total = collect($data['services'] ?? [])
+                        $subtotal = collect($data['services'] ?? [])
                             ->sum('biaya');
+
+                        $potongan = $data['potongan_biaya'] ?? 0;
+
+                        $total = max($subtotal - $potongan, 0);
 
                         ServiceJadi::create([
                             'category_id'     => $record->category_id,
-                            'data_client_id' => $record->data_client_id,
+                            'data_client_id'  => $record->data_client_id,
                             'nama_barang'     => $record->nama_barang,
                             'nomor_surat'     => $record->nomor_surat,
                             'qrcode'          => $record->qrcode,
@@ -161,17 +201,17 @@ class ServiceProsesResource extends Resource
                             'tanggal_selesai' => now(),
                             'garansi'         => $data['garansi'],
                             'services'        => $data['services'],
+                            'potongan_biaya'  => $potongan,
                             'total_biaya'     => $total,
                         ]);
 
-                        // hapus dari proses
                         $record->delete();
                     })
-                    ->requiresConfirmation(),
+                    ->requiresConfirmation()
+                    ->button(),
 
-
-                Tables\Actions\EditAction::make(),
             ])
+
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),

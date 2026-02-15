@@ -18,7 +18,8 @@ class ServiceMasukResource extends Resource
 {
     protected static ?string $model = ServiceMasuk::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationIcon = 'heroicon-o-fire';
     protected static ?string $navigationLabel = 'Service Masuk';
     protected static ?string $pluralLabel = 'Service Masuk';
     protected static ?string $navigationGroup = 'Transaksi';

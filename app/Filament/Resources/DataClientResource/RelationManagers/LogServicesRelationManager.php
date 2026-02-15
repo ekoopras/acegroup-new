@@ -30,21 +30,45 @@ class LogServicesRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('nama')
             ->columns([
-                TextColumn::make('nama_barang'),
+                TextColumn::make('barang')
+                    ->label('Barang')
+                    ->html()
+                    ->getStateUsing(
+                        fn($record) =>
+                        '<strong>' . e($record->category->category) . '</strong><br>' .
+                            e($record->nama_barang)
+                    )
+                    ->searchable(),
 
                 TextColumn::make('tanggal_pengambilan')
                     ->date(),
 
                 TextColumn::make('services')
                     ->formatStateUsing(function ($state) {
-                        return collect($state)
+
+                        if (empty($state)) {
+                            return '-';
+                        }
+
+                        // Bungkus jadi JSON array valid
+                        $json = '[' . $state . ']';
+                        $data = json_decode($json, true);
+
+                        if (! is_array($data)) {
+                            return '-';
+                        }
+
+                        return collect($data)
                             ->map(
                                 fn($item) =>
                                 $item['service'] . ' (Rp ' . number_format($item['biaya']) . ')'
                             )
-                            ->implode(', ');
+                            ->implode('<br>');
                     })
+                    ->html()   // WAJIB supaya <br> terbaca
                     ->wrap(),
+
+
 
                 TextColumn::make('total_biaya')
                     ->money('IDR', locale: 'id'),
@@ -55,11 +79,12 @@ class LogServicesRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                //Tables\Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                //Tables\Actions\EditAction::make(),
+                //Tables\Actions\DeleteAction::make(),
+                //Tables\Actions\ViewAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

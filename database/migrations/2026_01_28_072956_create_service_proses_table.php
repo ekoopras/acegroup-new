@@ -22,7 +22,7 @@ return new class extends Migration
             $table->text('kerusakan');
             $table->json('perlengkapan')->nullable();
             $table->text('keterangan')->nullable();
-            $table->enum('status', ['Proses', 'Pending'])->default('Proses');
+            $table->enum('status', ['Proses', 'Pending', 'Deal'])->default('Proses');
             $table->timestamps();
         });
     }
