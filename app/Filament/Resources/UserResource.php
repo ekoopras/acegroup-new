@@ -35,8 +35,7 @@ class UserResource extends Resource
 
                 Forms\Components\Select::make('category_id')
                     ->label('Category')
-                    ->options(Category::all()->pluck('category', 'id'))
-                    ->required(),
+                    ->options(Category::all()->pluck('category', 'id')),
                 Forms\Components\Select::make('role')
                     ->options([
                         'super_admin' => 'Super Admin',
@@ -86,8 +85,13 @@ class UserResource extends Resource
     {
         return [
             'index' => Pages\ListUsers::route('/'),
-            'create' => Pages\CreateUser::route('/create'),
-            'edit' => Pages\EditUser::route('/{record}/edit'),
+            //'create' => Pages\CreateUser::route('/create'),
+            //'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->isSuperAdmin(); // hanya super admin
     }
 }
