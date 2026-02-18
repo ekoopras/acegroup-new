@@ -207,15 +207,4 @@ class ServiceMasukResource extends Resource
             //'edit' => Pages\EditServiceMasuk::route('/{record}/edit'),
         ];
     }
-
-    public static function getEloquentQuery(): Builder
-    {
-        $query = parent::getEloquentQuery();
-
-        if (auth()->user()->isSuperAdmin()) {
-            return $query; // super admin lihat semua
-        }
-
-        return $query->where('category_id', auth()->user()->category_id); // guru hanya mapel sendiri
-    }
 }
