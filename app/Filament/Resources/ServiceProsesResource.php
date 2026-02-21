@@ -42,6 +42,13 @@ class ServiceProsesResource extends Resource
                     ])
                     ->required(),
 
+                Select::make('user_id')
+                    ->label('Teknisi')
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+
                 Forms\Components\Textarea::make('keterangan')
                     ->rows(10)
                     ->columnSpanFull(),
@@ -99,6 +106,13 @@ class ServiceProsesResource extends Resource
                         'style' => 'max-width: 280px;',
                     ])
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Teknisi')
+                    ->badge()
+                    ->color('success')
+                    ->searchable()
+                    ->sortable(),
 
                 // Tables\Columns\ViewColumn::make('qrcode')
                 //     ->label('QR')

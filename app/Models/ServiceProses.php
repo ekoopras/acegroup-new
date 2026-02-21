@@ -19,6 +19,7 @@ class ServiceProses extends Model
         'perlengkapan',
         'keterangan',
         'status',
+        'user_id',
     ];
 
     protected $casts = [
@@ -33,5 +34,10 @@ class ServiceProses extends Model
     public function dataClient()
     {
         return $this->belongsTo(DataClient::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

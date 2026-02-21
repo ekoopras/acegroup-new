@@ -10,6 +10,11 @@ class ListDataClients extends ListRecords
 {
     protected static string $resource = DataClientResource::class;
 
+    public function getTitle(): string
+    {
+        return '';
+    }
+
     // protected function getHeaderActions(): array
     // {
     //     return [

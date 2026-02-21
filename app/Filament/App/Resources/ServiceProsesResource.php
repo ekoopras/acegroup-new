@@ -24,7 +24,12 @@ class ServiceProsesResource extends Resource
 {
     protected static ?string $model = ServiceProses::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
+
+    protected static ?string $navigationLabel = 'Service Proses';
+    protected static ?string $pluralLabel = 'Service Proses';
 
     public static function form(Form $form): Form
     {
@@ -36,6 +41,13 @@ class ServiceProsesResource extends Resource
                         'Pending' => 'Pending',
                         'Deal' => 'Deal',
                     ])
+                    ->required(),
+
+                Select::make('user_id')
+                    ->label('Teknisi')
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload()
                     ->required(),
 
                 Forms\Components\Textarea::make('keterangan')
@@ -116,6 +128,12 @@ class ServiceProsesResource extends Resource
                                     ->extraAttributes([
                                         'style' => 'max-width: 250px;',
                                     ]),
+                                Tables\Columns\TextColumn::make('user.name')
+                                    ->label('Teknisi')
+                                    ->badge()
+                                    ->alignRight()
+                                    ->color('success')
+                                    ->searchable(),
 
                             ])->space(1),
 
@@ -250,5 +268,21 @@ class ServiceProsesResource extends Resource
             //'create' => Pages\CreateServiceProses::route('/create'),
             //'edit' => Pages\EditServiceProses::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (auth()->user()->isSuperAdmin()) {
+            return $query; // super admin lihat semua
+        }
+
+        //return $query->where('mapel_id', auth()->user()->mapel_id); // guru hanya mapel sendiri
+
+        return $query->whereIn(
+            'category_id',
+            auth()->user()->category()->pluck('categories.id')
+        );
     }
 }

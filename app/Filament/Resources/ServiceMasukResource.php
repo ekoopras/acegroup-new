@@ -165,6 +165,7 @@ class ServiceMasukResource extends Resource
                             'perlengkapan'  => $record->perlengkapan,
                             'keterangan'    => $record->keterangan,
                             'status'        => 'Proses',
+                            'user_id'        => auth()->id(),
                         ]);
 
                         // ⬇️ hapus dari ServiceMasuk

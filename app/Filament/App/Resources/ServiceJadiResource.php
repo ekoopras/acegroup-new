@@ -21,7 +21,10 @@ class ServiceJadiResource extends Resource
 {
     protected static ?string $model = ServiceJadi::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?int $navigationSort = 3;
+
+    protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
+
 
     public static function form(Form $form): Form
     {
@@ -140,5 +143,21 @@ class ServiceJadiResource extends Resource
             'create' => Pages\CreateServiceJadi::route('/create'),
             'edit' => Pages\EditServiceJadi::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (auth()->user()->isSuperAdmin()) {
+            return $query; // super admin lihat semua
+        }
+
+        //return $query->where('mapel_id', auth()->user()->mapel_id); // guru hanya mapel sendiri
+
+        return $query->whereIn(
+            'category_id',
+            auth()->user()->category()->pluck('categories.id')
+        );
     }
 }

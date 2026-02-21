@@ -19,25 +19,50 @@ class ListServiceProses extends ListRecords
     //     ];
     // }
 
+    public function getTitle(): string
+    {
+        return '';
+    }
+
     public function getTabs(): array
     {
         return [
             // 'all' => Tab::make('Semua')
             //     ->badge(ServiceProses::count()),
 
+            // 'proses' => Tab::make('Proses')
+            //     ->query(fn($query) => $query->where('status', 'Proses'))
+            //     ->badge(ServiceProses::where('status', 'Proses')->count())
+            //     ->badgeColor('warning'),
+
+            // 'pending' => Tab::make('Pending')
+            //     ->query(fn($query) => $query->where('status', 'Pending'))
+            //     ->badge(ServiceProses::where('status', 'Pending')->count())
+            //     ->badgeColor('danger'),
+
+            // 'deal' => Tab::make('Deal')
+            //     ->query(fn($query) => $query->where('status', 'Deal'))
+            //     ->badge(ServiceProses::where('status', 'Deal')->count())
+            //     ->badgeColor('success'),
             'proses' => Tab::make('Proses')
                 ->query(fn($query) => $query->where('status', 'Proses'))
-                ->badge(ServiceProses::where('status', 'Proses')->count())
+                ->badge(fn() => ServiceProsesResource::getEloquentQuery()
+                    ->where('status', 'Proses')
+                    ->count())
                 ->badgeColor('warning'),
 
             'pending' => Tab::make('Pending')
                 ->query(fn($query) => $query->where('status', 'Pending'))
-                ->badge(ServiceProses::where('status', 'Pending')->count())
+                ->badge(fn() => ServiceProsesResource::getEloquentQuery()
+                    ->where('status', 'Pending')
+                    ->count())
                 ->badgeColor('danger'),
 
             'deal' => Tab::make('Deal')
                 ->query(fn($query) => $query->where('status', 'Deal'))
-                ->badge(ServiceProses::where('status', 'Deal')->count())
+                ->badge(fn() => ServiceProsesResource::getEloquentQuery()
+                    ->where('status', 'Deal')
+                    ->count())
                 ->badgeColor('success'),
         ];
     }

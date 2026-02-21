@@ -21,7 +21,10 @@ class ServiceMasukResource extends Resource
 {
     protected static ?string $model = ServiceMasuk::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationIcon = 'heroicon-o-fire';
+    protected static ?string $navigationLabel = 'Service Masuk';
+    protected static ?string $pluralLabel = 'Service Masuk';
 
     public static function form(Form $form): Form
     {
@@ -160,6 +163,7 @@ class ServiceMasukResource extends Resource
                             'perlengkapan'  => $record->perlengkapan,
                             'keterangan'    => $record->keterangan,
                             'status'        => 'Proses',
+                            'user_id'        => auth()->id(),
                         ]);
 
                         // ⬇️ hapus dari ServiceMasuk
@@ -201,6 +205,11 @@ class ServiceMasukResource extends Resource
             return $query; // super admin lihat semua
         }
 
-        return $query->where('category_id', auth()->user()->category_id); // guru hanya mapel sendiri
+        //return $query->where('mapel_id', auth()->user()->mapel_id); // guru hanya mapel sendiri
+
+        return $query->whereIn(
+            'category_id',
+            auth()->user()->category()->pluck('categories.id')
+        );
     }
 }

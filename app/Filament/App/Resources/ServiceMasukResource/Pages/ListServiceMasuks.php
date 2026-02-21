@@ -10,6 +10,11 @@ class ListServiceMasuks extends ListRecords
 {
     protected static string $resource = ServiceMasukResource::class;
 
+    public function getTitle(): string
+    {
+        return '';
+    }
+
     // protected function getHeaderActions(): array
     // {
     //     return [

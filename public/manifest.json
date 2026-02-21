@@ -1,0 +1,17 @@
+{
+    "name": "AceService",
+    "short_name": "AceService",
+    "start_url": "/app",
+    "background_color": "#6777ef",
+    "description": "Acegroup Service",
+    "display": "fullscreen",
+    "theme_color": "#6777ef",
+    "icons": [
+        {
+            "src": "logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

@@ -33,14 +33,23 @@ class UserResource extends Resource
                     ->dehydrated(fn($state) => filled($state))
                     ->required(fn(string $context) => $context === 'create'),
 
-                Forms\Components\Select::make('category_id')
+                // Forms\Components\Select::make('category_id')
+                //     ->label('Category')
+                //     ->options(Category::all()->pluck('category', 'id')),
+
+                Forms\Components\Select::make('category')
                     ->label('Category')
-                    ->options(Category::all()->pluck('category', 'id')),
+                    ->relationship('category', 'category') // lebih bagus pakai relationship
+                    ->multiple()
+                    ->preload()
+                    ->searchable(),
+
                 Forms\Components\Select::make('role')
                     ->options([
                         'super_admin' => 'Super Admin',
                         'team_laptop' => 'Team Laptop',
                         'team_printer' => 'Team Printer',
+                        'team_pelayanan' => 'Team Pelayanan',
                     ])
                     ->required(),
             ]);
@@ -58,6 +67,8 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email'),
                 Tables\Columns\TextColumn::make('category.category')
                     ->label('Category')
+                    ->badge()
+                    ->color('success')
                     ->formatStateUsing(fn($state) => Str::title($state)),
                 Tables\Columns\TextColumn::make('role'),
             ])

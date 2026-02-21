@@ -10,6 +10,11 @@ class ListServiceJadis extends ListRecords
 {
     protected static string $resource = ServiceJadiResource::class;
 
+    public function getTitle(): string
+    {
+        return '';
+    }
+
     // protected function getHeaderActions(): array
     // {
     //     return [

@@ -17,6 +17,8 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\Support\Facades\FilamentView;
+use Illuminate\Support\Facades\Blade;
 
 class AppPanelProvider extends PanelProvider
 {
@@ -25,6 +27,28 @@ class AppPanelProvider extends PanelProvider
         return $panel
             ->id('app')
             ->path('app')
+
+            ->renderHook(
+                'panels::head.end',
+                fn(): string => '
+        <!-- PWA -->
+        <meta name="theme-color" content="#6777ef"/>
+        <link rel="apple-touch-icon" href="' . asset('logo.png') . '">
+        <link rel="manifest" href="' . url('/manifest.json') . '">
+
+        <script>
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.register("/sw.js", { scope: "/app/" })
+                .then(function(reg) {
+                    console.log("SW registered:", reg);
+                }).catch(function(err) {
+                    console.log("SW failed:", err);
+                });
+            }
+        </script>
+    '
+            )
+
             ->login()
             ->colors([
                 'primary' => Color::Amber,
