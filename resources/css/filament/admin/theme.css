@@ -23,4 +23,22 @@
         @apply border-gray-800;
     }
 
+    .fi-header .fi-header-heading {
+        @apply text-xl font-semibold tracking-normal;
+    }
+
+    @layer components {
+        .fi-sidebar-item-active>a {
+            background-color: #ecf3ff;
+        }
+
+        .fi-sidebar-item-label {
+            font-weight: 800;
+        }
+
+        .fi-sidebar a:hover {
+            background-color: #ecf3ff;
+        }
+    }
+
 }

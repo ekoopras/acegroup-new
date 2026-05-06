@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('nomor_surat')->unique();
             $table->longText('qrcode')->nullable();
             $table->date('tanggal_masuk');
-            $table->text('kerusakan');
+            $table->json('kerusakan');
             $table->json('perlengkapan')->nullable();
             $table->text('keterangan')->nullable();
             $table->timestamps();

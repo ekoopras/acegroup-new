@@ -116,12 +116,11 @@ class ServiceMasukResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('kerusakan')
-                    ->wrap()
-                    ->lineClamp(3)
-                    ->extraAttributes([
-                        'style' => 'max-width: 250px;',
-                    ])
-                    ->searchable(),
+                    ->label('Daftar Kerusakan')
+                    ->badge()
+                    ->color('primary')
+                    ->listWithLineBreaks()
+                    ->wrap(),
 
                 Tables\Columns\ViewColumn::make('qrcode')
                     ->label('QR')

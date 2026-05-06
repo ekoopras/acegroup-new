@@ -23,6 +23,7 @@ class ServiceProses extends Model
     ];
 
     protected $casts = [
+        'kerusakan' => 'array',
         'perlengkapan' => 'array',
     ];
 

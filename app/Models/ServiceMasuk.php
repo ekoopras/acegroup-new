@@ -21,6 +21,7 @@ class ServiceMasuk extends Model
     ];
 
     protected $casts = [
+        'kerusakan' => 'array',
         'perlengkapan' => 'array',
         'tanggal_masuk' => 'date',
     ];

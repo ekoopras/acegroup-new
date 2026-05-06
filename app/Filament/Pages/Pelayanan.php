@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\DataClient;
 use App\Models\ServiceMasuk;
 use App\Models\Category;
+use App\Models\Kerusakan;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
@@ -19,7 +20,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Actions\Action;
-
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 
 class Pelayanan extends Page implements Forms\Contracts\HasForms
 {
@@ -65,6 +67,27 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
             ->schema([
                 section::make()
                     ->schema([
+                        Select::make('search_client')
+                            ->label('Cari Client (Nama / Nomor WA)')
+                            ->placeholder('Ketik untuk mencari...')
+                            ->searchable()
+                            ->preload()
+                            // Ambil data dari tabel DataClient
+                            ->options(DataClient::all()->mapWithKeys(function ($client) {
+                                return [$client->id => "{$client->nama} - {$client->nomor_wa}"];
+                            }))
+                            ->live()
+                            // LOGIKA AUTO-FILL: Saat diklik, isi form nama dan nomor_wa di bawah
+                            ->afterStateUpdated(function ($state, Set $set) {
+                                if ($state) {
+                                    $client = DataClient::find($state);
+                                    if ($client) {
+                                        $set('nama', $client->nama);
+                                        $set('nomor_wa', $client->nomor_wa);
+                                    }
+                                }
+                            })
+                            ->columnSpanFull(),
                         TextInput::make('nama')
                             ->label('Nama Client')
                             ->required(),
@@ -111,6 +134,7 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
                                                         ->label('Kategori')
                                                         ->options(Category::pluck('category', 'id'))
                                                         ->searchable()
+                                                        ->live()
                                                         ->required(),
 
                                                     TextInput::make('nama_barang')
@@ -126,9 +150,38 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
                                             // KERUSAKAN & KETERANGAN
                                             Section::make()
                                                 ->schema([
-                                                    Textarea::make('kerusakan')
-                                                        ->label('Kerusakan')
-                                                        ->rows(5),
+                                                    Select::make('kerusakan')
+                                                        ->label('Daftar Kerusakan')
+                                                        ->multiple() // Mengizinkan pilih banyak
+                                                        ->searchable()
+                                                        ->preload()
+                                                        ->options(function (Get $get) {
+                                                            $categoryId = $get('category_id');
+                                                            if (! $categoryId) return [];
+
+                                                            return Kerusakan::where('category_id', $categoryId)
+                                                                ->pluck('nama_kerusakan', 'nama_kerusakan');
+                                                        })
+                                                        // Munculkan modal tambah data saat klik ikon plus (+)
+                                                        ->createOptionForm([
+                                                            TextInput::make('nama_kerusakan')
+                                                                ->label('Nama Kerusakan Baru')
+                                                                ->required(),
+                                                        ])
+                                                        // Logika penyimpanan data dari modal ke tabel master
+                                                        ->createOptionUsing(function (array $data, Get $get) {
+                                                            $categoryId = $get('category_id');
+
+                                                            if (! $categoryId) return null;
+
+                                                            $new = Kerusakan::create([
+                                                                'category_id' => $categoryId,
+                                                                'nama_kerusakan' => $data['nama_kerusakan'],
+                                                            ]);
+
+                                                            return $new->nama_kerusakan;
+                                                        })
+                                                        ->required(),
 
                                                     Textarea::make('keterangan')
                                                         ->label('Keterangan')
@@ -245,9 +298,6 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
     }
 
 
-
-
-
     protected function getActions(): array
     {
         return [
@@ -284,19 +334,21 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
     }
 
 
-
-
-
-
     private function sendWhatsapp(ServiceMasuk $service): string
     {
         $service->load('dataClient', 'category');
+
+        // Cek apakah 'kerusakan' adalah array, jika ya gabungkan dengan koma
+        // Jika bukan array (null atau string), biarkan apa adanya
+        $kerusakanText = is_array($service->kerusakan)
+            ? implode(', ', $service->kerusakan)
+            : $service->kerusakan;
 
         $text = urlencode(
             "Halo {$service->dataClient->nama},\n\n" .
                 "Service Anda sudah kami terima.\n\n" .
                 "Kategori: {$service->category->category}\n" .
-                "Kerusakan: {$service->kerusakan}\n" .
+                "Kerusakan: {$kerusakanText}\n" . // Gunakan variabel hasil implode di sini
                 "Tanggal: {$service->tanggal_masuk->format('d-m-Y')}\n\n" .
                 "Terima kasih 🙏"
         );
