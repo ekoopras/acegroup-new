@@ -22,7 +22,8 @@ return new class extends Migration
             $table->json('kerusakan');
             $table->json('perlengkapan')->nullable();
             $table->text('keterangan')->nullable();
-            $table->enum('status', ['Proses', 'Pending', 'Deal'])->default('Proses');
+            $table->json('log_status')->nullable();
+            $table->string('token')->unique();
             $table->timestamps();
         });
     }

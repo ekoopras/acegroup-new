@@ -20,6 +20,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 
@@ -186,6 +187,9 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
                                                     Textarea::make('keterangan')
                                                         ->label('Keterangan')
                                                         ->rows(5),
+
+                                                    Hidden::make('token')
+                                                        ->default(fn() => str()->random(32)),
                                                 ])
                                                 ->columns(2),
                                         ]),
@@ -259,6 +263,7 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
                     'kerusakan'     => $service['kerusakan'] ?? null,
                     'perlengkapan'  => $service['perlengkapan'] ?? [],
                     'keterangan'    => $service['keterangan'] ?? null,
+                    'token'   => $service['token'],
                 ]);
 
                 // simpan semua ID (buat print)
@@ -338,8 +343,6 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
     {
         $service->load('dataClient', 'category');
 
-        // Cek apakah 'kerusakan' adalah array, jika ya gabungkan dengan koma
-        // Jika bukan array (null atau string), biarkan apa adanya
         $kerusakanText = is_array($service->kerusakan)
             ? implode(', ', $service->kerusakan)
             : $service->kerusakan;
@@ -348,7 +351,7 @@ class Pelayanan extends Page implements Forms\Contracts\HasForms
             "Halo {$service->dataClient->nama},\n\n" .
                 "Service Anda sudah kami terima.\n\n" .
                 "Kategori: {$service->category->category}\n" .
-                "Kerusakan: {$kerusakanText}\n" . // Gunakan variabel hasil implode di sini
+                "Kerusakan: {$kerusakanText}\n" .
                 "Tanggal: {$service->tanggal_masuk->format('d-m-Y')}\n\n" .
                 "Terima kasih 🙏"
         );

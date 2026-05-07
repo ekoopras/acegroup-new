@@ -18,11 +18,13 @@ class ServiceProses extends Model
         'kerusakan',
         'perlengkapan',
         'keterangan',
-        'status',
+        'log_status',
         'user_id',
+        'token',
     ];
 
     protected $casts = [
+        'log_status' => 'array',
         'kerusakan' => 'array',
         'perlengkapan' => 'array',
     ];

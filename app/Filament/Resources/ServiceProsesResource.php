@@ -7,8 +7,11 @@ use App\Filament\Resources\ServiceProsesResource\RelationManagers;
 use App\Models\ServiceJadi;
 use App\Models\ServiceProses;
 use Filament\Forms;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -34,24 +37,39 @@ class ServiceProsesResource extends Resource
         return $form
             ->schema([
 
-                Forms\Components\Select::make('status')
-                    ->options([
-                        'Proses' => 'Proses',
-                        'Pending' => 'Pending',
-                        'Deal' => 'Deal',
+                Section::make('Log Perkembangan')
+                    ->description('Tambahkan riwayat pengecekan dan pengerjaan di sini')
+                    ->schema([
+                        Repeater::make('log_status')
+                            ->label('Update Progres')
+                            ->schema([
+                                Select::make('status')
+                                    ->options([
+                                        'Proses Cek' => 'Proses Cek',
+                                        'Pending' => 'Pending (Menunggu Part/Konfirmasi)',
+                                        'Deal' => 'Deal (Pengerjaan Disetujui)',
+                                        'Proses Pengerjaan' => 'Proses Pengerjaan',
+                                        'Selesai' => 'Selesai',
+                                    ])
+                                    ->required()
+                                    ->native(false),
+
+                                DateTimePicker::make('tanggal')
+                                    ->default(now())
+                                    ->required(),
+
+                                Textarea::make('keterangan')
+                                    ->placeholder('Contoh: Sedang mengganti IC Power...')
+                                    ->rows(2)
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2)
+                            ->collapsible() // Bisa diciutkan agar rapi
+                            ->cloneable() // Mempermudah teknisi jika keterangan mirip
+                            ->addActionLabel('Tambah Update Baru')
+                            ->reorderableWithButtons(), // Urutan bisa diatur
                     ])
-                    ->required(),
 
-                Select::make('user_id')
-                    ->label('Teknisi')
-                    ->relationship('user', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->required(),
-
-                Forms\Components\Textarea::make('keterangan')
-                    ->rows(10)
-                    ->columnSpanFull(),
             ]);
     }
 
@@ -88,23 +106,37 @@ class ServiceProsesResource extends Resource
                     ])
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('status')
+                Tables\Columns\TextColumn::make('log_status')
+                    ->label('Status Terakhir')
                     ->badge()
-                    ->badge()
+                    ->getStateUsing(function ($record) {
+                        // Mengambil array log_status
+                        $logs = $record->log_status;
+
+                        // Pastikan logs adalah array dan tidak kosong
+                        if (is_array($logs) && !empty($logs)) {
+                            // Mengambil elemen terakhir dari array
+                            $lastLog = end($logs);
+                            return $lastLog['status'] ?? '-';
+                        }
+
+                        return 'Belum ada status';
+                    })
                     ->color(fn(string $state): string => match ($state) {
-                        'Proses' => 'warning',   // hijau
-                        'Pending' => 'danger',   // merah
-                        'Deal' => 'success',   // merah
+                        'Proses Cek', 'Proses Pengerjaan' => 'warning',
+                        'Pending' => 'danger',
+                        'Deal', 'Selesai' => 'success',
                         default => 'gray',
                     })
-                    ->searchable(),
-
-                Tables\Columns\TextColumn::make('keterangan')
-                    ->wrap()
-                    //->lineClamp(3)
-                    ->extraAttributes([
-                        'style' => 'max-width: 280px;',
-                    ])
+                    // Opsional: Menampilkan keterangan terakhir di bawah status sebagai info tambahan
+                    ->description(function ($record) {
+                        $logs = $record->log_status;
+                        if (is_array($logs) && !empty($logs)) {
+                            $lastLog = end($logs);
+                            return $lastLog['keterangan'] ?? '';
+                        }
+                        return null;
+                    })
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('user.name')
@@ -113,12 +145,6 @@ class ServiceProsesResource extends Resource
                     ->color('success')
                     ->searchable()
                     ->sortable(),
-
-                // Tables\Columns\ViewColumn::make('qrcode')
-                //     ->label('QR')
-                //     ->view('filament.tables.qrcode')
-                //     ->tooltip(fn($record) => $record->nomor_surat)
-                //     ->alignCenter(),
 
 
             ])
@@ -197,29 +223,50 @@ class ServiceProsesResource extends Resource
                     ])
 
                     ->action(function ($record, array $data) {
+                        // 1. Ambil riwayat log yang sudah ada di tabel proses
+                        // Jika null, jadikan array kosong agar tidak error saat digabung
+                        $riwayatLama = $record->log_status ?? [];
 
-                        $subtotal = collect($data['services'] ?? [])
-                            ->sum('biaya');
+                        // 2. Buat status "Selesai" sebagai tambahan
+                        $statusSelesai = [
+                            'status'     => 'Selesai',
+                            'tanggal'    => now()->toDateTimeString(),
+                            'keterangan' => 'Unit telah selesai dikerjakan dan siap diambil. Garansi: ' . $data['garansi'],
+                        ];
 
+                        // 3. Gabungkan riwayat lama dengan status baru (Push ke array)
+                        $riwayatLengkap = $riwayatLama;
+                        $riwayatLengkap[] = $statusSelesai;
+
+                        // 4. Hitung total biaya
+                        $subtotal = collect($data['services'] ?? [])->sum('biaya');
                         $potongan = $data['potongan_biaya'] ?? 0;
-
                         $total = max($subtotal - $potongan, 0);
 
-                        ServiceJadi::create([
+                        // 5. Pindahkan ke ServiceJadi
+                        \App\Models\ServiceJadi::create([
                             'category_id'     => $record->category_id,
                             'data_client_id'  => $record->data_client_id,
                             'nama_barang'     => $record->nama_barang,
                             'nomor_surat'     => $record->nomor_surat,
                             'qrcode'          => $record->qrcode,
+                            'token'           => $record->token, // Token tetap sama
                             'tanggal_masuk'   => $record->tanggal_masuk,
                             'tanggal_selesai' => now(),
                             'garansi'         => $data['garansi'],
                             'services'        => $data['services'],
                             'potongan_biaya'  => $potongan,
                             'total_biaya'     => $total,
+                            'log_status'      => $riwayatLengkap, // 🔥 Sekarang riwayat lama ikut terbawa
                         ]);
 
+                        // 6. Hapus dari ServiceProses
                         $record->delete();
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Unit Selesai & Riwayat Tersimpan')
+                            ->success()
+                            ->send();
                     })
                     ->requiresConfirmation()
                     ->button(),

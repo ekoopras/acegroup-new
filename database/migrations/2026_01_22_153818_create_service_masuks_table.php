@@ -22,6 +22,7 @@ return new class extends Migration
             $table->json('kerusakan');
             $table->json('perlengkapan')->nullable();
             $table->text('keterangan')->nullable();
+            $table->string('token')->unique();
             $table->timestamps();
         });
     }

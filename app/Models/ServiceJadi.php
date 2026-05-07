@@ -17,12 +17,15 @@ class ServiceJadi extends Model
         'garansi',
         'services',
         'total_biaya',
+        'log_status',
+        'token',
     ];
 
     protected $casts = [
         'tanggal_masuk' => 'date',
         'tanggal_selesai' => 'date',
         'services' => 'array',
+        'log_status' => 'array',
     ];
 
 

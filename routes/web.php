@@ -13,3 +13,5 @@ Route::get('/install', function () {
 
 Route::get('/print/service/{service}', [ServiceMasukController::class, 'print'])
     ->name('service.print');
+
+Route::get('/track/{token}', [ServiceMasukController::class, 'track'])->name('tracking.check');

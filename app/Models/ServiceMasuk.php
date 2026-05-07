@@ -18,9 +18,11 @@ class ServiceMasuk extends Model
         'keterangan',
         'nomor_surat',
         'qrcode',
+        'token',
     ];
 
     protected $casts = [
+        'log_status' => 'array',
         'kerusakan' => 'array',
         'perlengkapan' => 'array',
         'tanggal_masuk' => 'date',
@@ -40,7 +42,7 @@ class ServiceMasuk extends Model
     protected static function booted()
     {
         static::creating(function ($service) {
-
+            // --- 1. LOGIKA NOMOR SURAT & QR CODE ---
             $date = now()->format('dmy');
 
             // Ambil nomor terakhir dari SEMUA tabel
@@ -59,7 +61,6 @@ class ServiceMasuk extends Model
                 ->max();
 
             $nextNumber = $maxNumber ? $maxNumber + 1 : 1;
-
             $number = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
             $service->nomor_surat = "S-{$date}-{$number}";
@@ -67,6 +68,9 @@ class ServiceMasuk extends Model
             $service->qrcode = QrCode::format('svg')
                 ->size(250)
                 ->generate($service->nomor_surat);
+
+            // --- 2. LOGIKA TOKEN TRACKING (TAMBAHKAN DI SINI) ---
+            $service->token = str()->random(32);
         });
     }
 }

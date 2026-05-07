@@ -30,6 +30,8 @@ return new class extends Migration
             $table->json('services')->nullable();
 
             $table->unsignedBigInteger('total_biaya')->default(0);
+            $table->string('token')->nullable();
+            $table->json('log_status')->nullable();
             $table->timestamps();
         });
     }

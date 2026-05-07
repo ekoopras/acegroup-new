@@ -128,6 +128,13 @@ class ServiceMasukResource extends Resource
                     ->tooltip(fn($record) => $record->nomor_surat)
                     ->alignCenter(),
 
+                Tables\Columns\TextColumn::make('token')
+                    ->label('Tracking Link')
+                    ->formatStateUsing(fn($state) => route('tracking.check', ['token' => $state]))
+                    ->copyable() // Agar bisa diklik untuk copy link
+                    ->color('primary')
+                    ->icon('heroicon-o-link'),
+
 
 
                 // Tables\Columns\TextColumn::make('nomor_wa')
@@ -154,16 +161,26 @@ class ServiceMasukResource extends Resource
 
                         // ⬇️ pindahkan data
                         ServiceProses::create([
-                            'category_id'   => $record->category_id,
+                            'category_id'    => $record->category_id,
                             'data_client_id' => $record->data_client_id,
-                            'nama_barang'   => $record->nama_barang,
-                            'nomor_surat'   => $record->nomor_surat,
-                            'qrcode'        => $record->qrcode,
-                            'tanggal_masuk' => $record->tanggal_masuk,
-                            'kerusakan'     => $record->kerusakan,
-                            'perlengkapan'  => $record->perlengkapan,
-                            'keterangan'    => $record->keterangan,
-                            'status'        => 'Proses',
+                            'nama_barang'    => $record->nama_barang,
+                            'nomor_surat'    => $record->nomor_surat,
+                            'qrcode'         => $record->qrcode,
+                            'tanggal_masuk'  => $record->tanggal_masuk,
+                            'kerusakan'      => $record->kerusakan,
+                            'perlengkapan'   => $record->perlengkapan,
+                            'keterangan'     => $record->keterangan,
+                            'token'          => $record->token,
+
+                            // Format harus ARRAY OF ARRAYS agar bisa dibaca Repeater
+                            'log_status'     => [
+                                [
+                                    'status'     => 'Proses Cek',
+                                    'tanggal'    => now()->toDateTimeString(),
+                                    'keterangan' => 'Unit mulai dikerjakan oleh teknisi.',
+                                ]
+                            ],
+
                             'user_id'        => auth()->id(),
                         ]);
 
