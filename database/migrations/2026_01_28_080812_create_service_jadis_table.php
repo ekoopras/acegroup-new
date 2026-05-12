@@ -13,22 +13,15 @@ return new class extends Migration
     {
         Schema::create('service_jadis', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('category_id')
-                ->constrained()
-                ->cascadeOnDelete();
-            $table->foreignId('data_client_id')
-                ->constrained()
-                ->cascadeOnDelete();
+            $table->foreignId('category_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('data_client_id')->constrained()->cascadeOnDelete();
             $table->string('nama_barang');
             $table->string('nomor_surat')->unique();
             $table->longText('qrcode')->nullable();
-
             $table->date('tanggal_masuk');
             $table->string('garansi')->nullable();
             $table->date('tanggal_selesai')->nullable();
-
             $table->json('services')->nullable();
-
             $table->unsignedBigInteger('total_biaya')->default(0);
             $table->string('token')->nullable();
             $table->json('log_status')->nullable();

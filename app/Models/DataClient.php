@@ -15,6 +15,12 @@ class DataClient extends Model
         'services' => 'array',
     ];
 
+    // Model Client.php
+    public function setNamaAttribute($value)
+    {
+        $this->attributes['nama'] = ucwords(strtolower($value));
+    }
+
     public function logServices()
     {
         return $this->hasMany(LogService::class);

@@ -37,9 +37,9 @@ class ListServiceProses extends ListRecords
                 ->badge($getCount('Deal'))
                 ->badgeColor('success'),
 
-            'selesai' => Tab::make('Selesai')
-                ->query(fn($query) => $query->whereRaw('JSON_EXTRACT(log_status, "$[last].status") = ?', ['Selesai']))
-                ->badge($getCount('Selesai'))
+            'trial' => Tab::make('Trial')
+                ->query(fn($query) => $query->whereRaw('JSON_EXTRACT(log_status, "$[last].status") = ?', ['Trial']))
+                ->badge($getCount('Trial'))
                 ->badgeColor('info')
                 ->label('Trial'),
         ];

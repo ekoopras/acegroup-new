@@ -39,37 +39,34 @@ class ServiceMasuk extends Model
     }
 
 
+    // function huruf kapital
+    public function setNamaBarangAttribute($value)
+    {
+        $this->attributes['nama_barang'] = ucwords(strtolower($value));
+    }
+
+
     protected static function booted()
     {
         static::creating(function ($service) {
-            // --- 1. LOGIKA NOMOR SURAT & QR CODE ---
             $date = now()->format('dmy');
 
-            // Ambil nomor terakhir dari SEMUA tabel
-            $tables = ['service_masuks', 'service_proses', 'service_jadis'];
+            // Loop untuk memastikan nomor surat benar-benar unik di semua tabel
+            do {
+                // Contoh format: S-110526-XJ92 (4 karakter acak)
+                $randomStr = strtoupper(str()->random(4));
+                $nomorSurat = "S-{$date}-{$randomStr}";
 
-            $lastNumbers = collect($tables)->map(function ($table) use ($date) {
-                return DB::table($table)
-                    ->where('nomor_surat', 'like', "S-{$date}-%")
-                    ->orderBy('nomor_surat', 'desc')
-                    ->value('nomor_surat');
-            });
+                $exists = collect(['service_masuks', 'service_proses', 'service_jadis'])
+                    ->contains(fn($table) => DB::table($table)->where('nomor_surat', $nomorSurat)->exists());
+            } while ($exists);
 
-            $maxNumber = $lastNumbers
-                ->filter()
-                ->map(fn($item) => (int) substr($item, -3))
-                ->max();
-
-            $nextNumber = $maxNumber ? $maxNumber + 1 : 1;
-            $number = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
-
-            $service->nomor_surat = "S-{$date}-{$number}";
+            $service->nomor_surat = $nomorSurat;
 
             $service->qrcode = QrCode::format('svg')
                 ->size(250)
                 ->generate($service->nomor_surat);
 
-            // --- 2. LOGIKA TOKEN TRACKING (TAMBAHKAN DI SINI) ---
             $service->token = str()->random(32);
         });
     }

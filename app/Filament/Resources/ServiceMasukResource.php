@@ -7,6 +7,9 @@ use App\Filament\Resources\ServiceMasukResource\RelationManagers;
 use App\Models\ServiceMasuk;
 use App\Models\ServiceProses;
 use Filament\Forms;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Group;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -28,64 +31,111 @@ class ServiceMasukResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('category_id')
-                    ->label('Kategori')
-                    ->relationship('category', 'category')
-                    ->searchable()
-                    ->required(),
+                Section::make('Informasi Utama')
+                    ->description('Data dasar client dan administrasi.')
+                    ->schema([
+                        Grid::make(3)->schema([
+                            Forms\Components\TextInput::make('nomor_surat')
+                                ->label('Nomor Surat')
+                                ->placeholder('Otomatis...')
+                                ->disabled()
+                                ->columnSpan(1),
 
-                Forms\Components\TextInput::make('nama_barang')
-                    ->label('Nama Barang')
-                    ->required(),
+                            Forms\Components\Select::make('data_client_id')
+                                ->label('Nama Client')
+                                ->relationship('dataClient', 'nama')
+                                ->required()
+                                ->searchable()
+                                ->disabled()
+                                ->afterStateHydrated(function ($state, $set) {
+                                    $client = \App\Models\DataClient::find($state);
+                                    if ($client) {
+                                        $set('nomor_wa', $client->nomor_wa);
+                                    }
+                                })
+                                ->afterStateUpdated(function ($state, $set) {
+                                    $client = \App\Models\DataClient::find($state);
+                                    if ($client) {
+                                        $set('nomor_wa', $client->nomor_wa);
+                                    }
+                                })
+                                ->columnSpan(1),
 
-                Forms\Components\TextInput::make('nama_client')
-                    ->label('Nama Client')
-                    ->required(),
+                            Forms\Components\TextInput::make('nomor_wa')
+                                ->label('Nomor WhatsApp')
+                                ->tel()
+                                ->disabled()
+                                ->dehydrated(false)
+                                ->placeholder('628xxx')
+                                ->helperText('Gunakan format 62')
+                                ->columnSpan(1),
+                        ]),
+                    ]),
 
-                Forms\Components\TextInput::make('nomor_wa')
-                    ->label('Nomor WhatsApp')
-                    ->tel()
-                    ->required()
-                    ->helperText('Gunakan format 628xxxx'),
+                // BAGIAN TENGAH: SPLIT LAYOUT (BARANG & PERLENGKAPAN)
+                Grid::make(3)->schema([
 
-                Forms\Components\DatePicker::make('tanggal_masuk')
-                    ->label('Tanggal Masuk')
-                    ->default(now())
-                    ->required(),
+                    // SISI KIRI (BARANG & KERUSAKAN) - 2 Kolom
+                    Group::make([
+                        Section::make('Detail Unit')
+                            ->schema([
+                                Grid::make(2)->schema([
+                                    Forms\Components\Select::make('category_id')
+                                        ->label('Kategori')
+                                        ->relationship('category', 'category')
+                                        ->searchable()
+                                        ->required(),
 
-                Forms\Components\Textarea::make('kerusakan')
-                    ->label('Kerusakan')
-                    ->required()
-                    ->columnSpanFull(),
+                                    Forms\Components\TextInput::make('nama_barang')
+                                        ->label('Nama Barang')
+                                        ->required()
+                                        ->extraInputAttributes(['style' => 'text-transform: capitalize;']),
+                                ]),
 
-                Forms\Components\CheckboxList::make('perlengkapan')
-                    ->label('Perlengkapan')
-                    ->options([
-                        'tas' => 'Tas',
-                        'adaptor_charger' => 'Adaptor Charger',
-                        'kabel_power' => 'Kabel Power',
-                        'kabel_usb_print' => 'Kabel USB Print',
-                        'kardus' => 'Kardus',
-                        'battrai' => 'Battrai',
-                        'kesing_kanan' => 'Kesing Kanan',
-                        'kesing_kiri' => 'Kesing Kiri',
-                        'usb_data' => 'USB Data',
-                    ])
-                    ->columns(2),
+                                Forms\Components\DatePicker::make('tanggal_masuk')
+                                    ->label('Tanggal Masuk')
+                                    ->default(now())
+                                    ->required(),
 
-                Forms\Components\Textarea::make('keterangan')
-                    ->label('Keterangan Tambahan')
-                    ->columnSpanFull(),
+                                Forms\Components\Textarea::make('kerusakan')
+                                    ->label('Deskripsi Kerusakan')
+                                    ->placeholder('Contoh: Laptop mati total, sering restart sendiri...')
+                                    ->required()
+                                    ->rows(3),
 
-                Forms\Components\TextInput::make('nomor_surat')
-                    ->label('Nomor Surat')
-                    ->disabled(),
+                                Forms\Components\Textarea::make('keterangan')
+                                    ->label('Keterangan Tambahan')
+                                    ->placeholder('Catatan khusus teknisi...')
+                                    ->rows(2),
+                            ]),
+                    ])->columnSpan(2),
 
-                Forms\Components\ViewField::make('qrcode')
-                    ->label('QR Code')
-                    ->view('filament.components.qrcode'),
+                    // SISI KANAN (PERLENGKAPAN & QR) - 1 Kolom
+                    Group::make([
+                        Section::make('Fisik & Validasi')
+                            ->schema([
+                                Forms\Components\CheckboxList::make('perlengkapan')
+                                    ->label('Perlengkapan yang Dibawa')
+                                    ->options([
+                                        'tas' => 'Tas',
+                                        'adaptor_charger' => 'Adaptor Charger',
+                                        'kabel_power' => 'Kabel Power',
+                                        'kabel_usb_print' => 'Kabel USB Print',
+                                        'kardus' => 'Kardus',
+                                        'battrai' => 'Baterai',
+                                        'kesing_kanan' => 'Kesing R',
+                                        'kesing_kiri' => 'Kesing L',
+                                        'usb_data' => 'USB Data',
+                                    ])
+                                    ->columns(1) // Satu kolom ke bawah agar rapi di sisi kanan
+                                    ->bulkToggleable(), // Fitur pilih semua
 
-
+                                Forms\Components\ViewField::make('qrcode')
+                                    ->label('QR Code Tracking')
+                                    ->view('filament.components.qrcode'),
+                            ]),
+                    ])->columnSpan(1),
+                ]),
 
             ]);
     }
@@ -95,15 +145,24 @@ class ServiceMasukResource extends Resource
         return $table
             ->columns([
 
-                Tables\Columns\TextColumn::make('barang')
-                    ->label('Barang')
-                    ->html()
-                    ->getStateUsing(
-                        fn($record) =>
-                        '<strong>' . e($record->category->category) . '</strong><br>' .
-                            e($record->nama_barang)
-                    )
+                Tables\Columns\TextColumn::make('nomor_surat')
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('category.category')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('nama_barang')
+                    ->searchable(),
+
+                // Tables\Columns\TextColumn::make('barang')
+                //     ->label('Barang')
+                //     ->html()
+                //     ->getStateUsing(
+                //         fn($record) =>
+                //         '<strong>' . e($record->category->category) . '</strong><br>' .
+                //             e($record->nama_barang)
+                //     )
+                //     ->searchable(),
 
                 Tables\Columns\TextColumn::make('dataClient.nama')
                     ->label('Nama Client')
@@ -111,31 +170,28 @@ class ServiceMasukResource extends Resource
 
                 Tables\Columns\TextColumn::make('tanggal_masuk')
                     ->label('Masuk')
-                    ->date('d M Y')
-                    ->badge()
+                    ->date('d/m/Y')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('kerusakan')
                     ->label('Daftar Kerusakan')
                     ->badge()
-                    ->color('primary')
+                    ->color('danger')
                     ->listWithLineBreaks()
                     ->wrap(),
 
-                Tables\Columns\ViewColumn::make('qrcode')
-                    ->label('QR')
-                    ->view('filament.tables.qrcode')
-                    ->tooltip(fn($record) => $record->nomor_surat)
-                    ->alignCenter(),
+                // Tables\Columns\ViewColumn::make('qrcode')
+                //     ->label('QR')
+                //     ->view('filament.tables.qrcode')
+                //     ->tooltip(fn($record) => $record->nomor_surat)
+                //     ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('token')
-                    ->label('Tracking Link')
-                    ->formatStateUsing(fn($state) => route('tracking.check', ['token' => $state]))
-                    ->copyable() // Agar bisa diklik untuk copy link
-                    ->color('primary')
-                    ->icon('heroicon-o-link'),
-
-
+                // Tables\Columns\TextColumn::make('token')
+                //     ->label('Tracking Link')
+                //     ->formatStateUsing(fn($state) => route('tracking.check', ['token' => $state]))
+                //     ->copyable() // Agar bisa diklik untuk copy link
+                //     ->color('primary')
+                //     ->icon('heroicon-o-link'),
 
                 // Tables\Columns\TextColumn::make('nomor_wa')
                 //     ->label('WhatsApp')
@@ -144,7 +200,6 @@ class ServiceMasukResource extends Resource
                 //     ->icon('heroicon-o-chat-bubble-left-right')
                 //     ->url(fn($record) => 'https://wa.me/' . $record->nomor_wa)
                 //     ->openUrlInNewTab(),
-
 
                 // Tables\Columns\TextColumn::make('perlengkapan')
                 //     ->badge()
@@ -156,7 +211,9 @@ class ServiceMasukResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('Kerjakan')
+                    ->label('Proses')
                     ->button()
+                    ->icon('heroicon-o-wrench-screwdriver')
                     ->action(function ($record) {
 
                         // ⬇️ pindahkan data
@@ -187,9 +244,14 @@ class ServiceMasukResource extends Resource
                         // ⬇️ hapus dari ServiceMasuk
                         $record->delete();
                     }),
+
+
+
+
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('whatsapp')
-                        ->label('WhatsApp')
+                        ->label('')
+                        ->button()
                         ->icon('heroicon-o-chat-bubble-left-right')
                         ->color('success') // HIJAU
                         ->url(
@@ -197,10 +259,25 @@ class ServiceMasukResource extends Resource
                             'https://wa.me/' . $record->dataClient->nomor_wa
                         )
                         ->openUrlInNewTab(),
-                    Tables\Actions\ViewAction::make(),
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
-                ])->icon('heroicon-o-ellipsis-vertical')->button()->label('')->color('danger'),
+                    Tables\Actions\Action::make('print')
+                        ->label('')
+                        ->icon('heroicon-o-printer')
+                        ->color('info')
+                        ->button()
+                        ->url(fn($record) => route('service.print', $record->id))
+                        ->openUrlInNewTab(),
+                    Tables\Actions\ViewAction::make()
+                        ->label('')
+                        ->button(),
+                    Tables\Actions\EditAction::make()
+                        ->label('')
+                        ->button(),
+                    Tables\Actions\DeleteAction::make()
+                        ->label('')
+                        ->button(),
+                ])->label(''),
+
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -221,7 +298,7 @@ class ServiceMasukResource extends Resource
         return [
             'index' => Pages\ListServiceMasuks::route('/'),
             //'create' => Pages\CreateServiceMasuk::route('/create'),
-            //'edit' => Pages\EditServiceMasuk::route('/{record}/edit'),
+            'edit' => Pages\EditServiceMasuk::route('/{record}/edit'),
         ];
     }
 }

@@ -20,7 +20,7 @@ class DataClientResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?string $navigationLabel = 'Data Client';
     protected static ?string $pluralLabel = 'Data Client';
-    protected static ?string $navigationGroup = 'Master Data';
+    protected static ?string $navigationGroup = 'Data';
 
     public static function form(Form $form): Form
     {
