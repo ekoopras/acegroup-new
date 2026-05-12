@@ -15,33 +15,46 @@ class ListServiceProses extends ListRecords
 
     public function getTabs(): array
     {
-        // Helper function untuk menghitung jumlah berdasarkan status terakhir
+        // Helper untuk badge count (UNQUOTE ditambahkan agar lebih aman)
         $getCount = function (string $status) {
-            return \App\Models\ServiceProses::whereRaw('JSON_EXTRACT(log_status, "$[last].status") = ?', [$status])->count();
+            return \App\Models\ServiceProses::whereRaw(
+                'JSON_UNQUOTE(JSON_EXTRACT(log_status, CONCAT("$[", JSON_LENGTH(log_status) - 1, "].status"))) = ?',
+                [$status]
+            )->count();
         };
 
         return [
-
             'proses' => Tab::make('Proses')
-                ->query(fn($query) => $query->whereRaw('JSON_EXTRACT(log_status, "$[last].status") IN (?, ?)', ['Proses Cek', 'Proses Pengerjaan']))
+                ->query(fn($query) => $query->whereRaw(
+                    'JSON_UNQUOTE(JSON_EXTRACT(log_status, CONCAT("$[", JSON_LENGTH(log_status) - 1, "].status"))) IN (?, ?)',
+                    ['Proses Cek', 'Proses Pengerjaan']
+                ))
                 ->badge($getCount('Proses Cek') + $getCount('Proses Pengerjaan'))
                 ->badgeColor('warning'),
 
             'pending' => Tab::make('Pending')
-                ->query(fn($query) => $query->whereRaw('JSON_EXTRACT(log_status, "$[last].status") = ?', ['Pending']))
+                ->query(fn($query) => $query->whereRaw(
+                    'JSON_UNQUOTE(JSON_EXTRACT(log_status, CONCAT("$[", JSON_LENGTH(log_status) - 1, "].status"))) = ?',
+                    ['Pending']
+                ))
                 ->badge($getCount('Pending'))
                 ->badgeColor('danger'),
 
             'deal' => Tab::make('Deal')
-                ->query(fn($query) => $query->whereRaw('JSON_EXTRACT(log_status, "$[last].status") = ?', ['Deal']))
+                ->query(fn($query) => $query->whereRaw(
+                    'JSON_UNQUOTE(JSON_EXTRACT(log_status, CONCAT("$[", JSON_LENGTH(log_status) - 1, "].status"))) = ?',
+                    ['Deal']
+                ))
                 ->badge($getCount('Deal'))
                 ->badgeColor('success'),
 
             'trial' => Tab::make('Trial')
-                ->query(fn($query) => $query->whereRaw('JSON_EXTRACT(log_status, "$[last].status") = ?', ['Trial']))
+                ->query(fn($query) => $query->whereRaw(
+                    'JSON_UNQUOTE(JSON_EXTRACT(log_status, CONCAT("$[", JSON_LENGTH(log_status) - 1, "].status"))) = ?',
+                    ['Trial']
+                ))
                 ->badge($getCount('Trial'))
-                ->badgeColor('info')
-                ->label('Trial'),
+                ->badgeColor('info'),
         ];
     }
 }
