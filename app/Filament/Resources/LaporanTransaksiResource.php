@@ -130,4 +130,9 @@ class LaporanTransaksiResource extends Resource
             'edit' => Pages\EditLaporanTransaksi::route('/{record}/edit'),
         ];
     }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->isSuperAdmin(); // hanya super admin
+    }
 }

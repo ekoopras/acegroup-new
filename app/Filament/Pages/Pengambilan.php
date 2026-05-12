@@ -161,4 +161,16 @@ class Pengambilan extends Page implements HasForms, HasActions
 
         $this->unitId = null;
     }
+
+    // Menolak akses ke halaman (Authorization)
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->isSuperAdmin();
+    }
+
+    // Menghilangkan menu dari sidebar (UI Navigation)
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()->isSuperAdmin();
+    }
 }

@@ -208,6 +208,7 @@ class ServiceProsesResource extends Resource
                                 '6_bulan' => '6 Bulan',
                                 '1_tahun' => '1 Tahun',
                                 '2_tahun' => '2 Tahun',
+                                '3x_service' => '3X Service',
                                 'None' => 'None',
                             ])
                             ->required(),
@@ -454,5 +455,21 @@ class ServiceProsesResource extends Resource
             //'create' => Pages\CreateServiceProses::route('/create'),
             //'edit' => Pages\EditServiceProses::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (auth()->user()->isSuperAdmin()) {
+            return $query; // super admin lihat semua
+        }
+
+        //return $query->where('mapel_id', auth()->user()->mapel_id); // guru hanya mapel sendiri
+
+        return $query->whereIn(
+            'category_id',
+            auth()->user()->category()->pluck('categories.id')
+        );
     }
 }
