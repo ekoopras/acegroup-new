@@ -177,12 +177,12 @@ class ServiceProsesResource extends Resource
                         return 'Belum Ditentukan';
                     }),
 
-                Tables\Columns\TextColumn::make('token')
-                    ->label('Tracking Link')
-                    ->formatStateUsing(fn($state) => route('tracking.check', ['token' => $state]))
-                    ->copyable() // Agar bisa diklik untuk copy link
-                    ->color('primary')
-                    ->icon('heroicon-o-link'),
+                // Tables\Columns\TextColumn::make('token')
+                //     ->label('Tracking Link')
+                //     ->formatStateUsing(fn($state) => route('tracking.check', ['token' => $state]))
+                //     ->copyable() // Agar bisa diklik untuk copy link
+                //     ->color('primary')
+                //     ->icon('heroicon-o-link'),
 
 
             ])
@@ -199,11 +199,15 @@ class ServiceProsesResource extends Resource
 
                         Select::make('garansi')
                             ->options([
-                                '4_hari' => '4 Hari',
                                 '2_minggu' => '2 Minggu',
                                 '1_bulan' => '1 Bulan',
+                                '2_bulan' => '2 Bulan',
                                 '3_bulan' => '3 Bulan',
+                                '4_bulan' => '4 Bulan',
+                                '5_bulan' => '5 Bulan',
+                                '6_bulan' => '6 Bulan',
                                 '1_tahun' => '1 Tahun',
+                                '2_tahun' => '2 Tahun',
                                 'None' => 'None',
                             ])
                             ->required(),
@@ -334,7 +338,7 @@ class ServiceProsesResource extends Resource
                     ->button(),
 
                 Tables\Actions\Action::make('cancel')
-                    ->label('Cancel / Gagal')
+                    ->label('Cancel')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->form([
