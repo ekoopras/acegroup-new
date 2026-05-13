@@ -49,28 +49,20 @@ class ServiceJadiResource extends Resource
 
                             // Bagian kiri (informasi utama)
                             Stack::make([
-
-                                //Tables\Columns\TextColumn::make('nomor_surat')->searchable(),
-
-                                Tables\Columns\TextColumn::make('tanggal_selesai')
+                                Tables\Columns\TextColumn::make('nomor_surat')
                                     ->badge()
-                                    ->date(),
-
-                                Tables\Columns\TextColumn::make('barang')
-                                    ->label('Barang')
-                                    ->alignLeft()
-                                    //->badge()
-                                    ->html()
-                                    ->getStateUsing(
-                                        fn($record) =>
-                                        fn($record) =>
-                                        '<strong style="font-size: 1.25rem;">' . e($record->category->category) . ' ' . e($record->nama_barang) . '</strong>'
-
-                                    )
                                     ->searchable(),
-
                                 Tables\Columns\TextColumn::make('dataClient.nama')
                                     ->label('Nama Client')
+                                    ->alignLeft()
+                                    ->searchable(),
+
+                                Tables\Columns\TextColumn::make('category.category')
+                                    ->alignLeft()
+                                    ->searchable(),
+
+                                Tables\Columns\TextColumn::make('nama_barang')
+                                    ->alignLeft()
                                     ->searchable(),
 
                             ])->space(1),
@@ -78,15 +70,41 @@ class ServiceJadiResource extends Resource
                             // Bagian kanan (tanggal + QR)
                             Stack::make([
 
+                                Tables\Columns\TextColumn::make('tanggal_selesai')
+                                    ->badge()
+                                    ->alignRight()
+                                    ->date(),
+
                                 Tables\Columns\TextColumn::make('total_biaya')
                                     ->money('IDR', locale: 'id')
+                                    ->badge()
+                                    ->color('success')
                                     ->alignRight(),
 
-                                Tables\Columns\ViewColumn::make('qrcode')
-                                    ->label('QR')
-                                    ->view('filament.tables.qrcode')
+                                Tables\Columns\TextColumn::make('teknisi_tim')
+                                    ->label('Teknisi Terlibat')
+                                    ->badge()
+                                    ->color('info')
+                                    ->getStateUsing(function ($record) {
+                                        $logs = $record->log_status;
+
+                                        if (is_array($logs) && !empty($logs)) {
+                                            // 1. Ambil semua teknisi_id dari tiap baris log
+                                            $userIds = collect($logs)
+                                                ->pluck('teknisi_id')
+                                                ->filter()
+                                                ->unique();
+
+                                            // 2. Ambil nama user berdasarkan ID tersebut
+                                            return \App\Models\User::whereIn('id', $userIds)
+                                                ->pluck('name')
+                                                ->toArray();
+                                        }
+
+                                        return null;
+                                    })
+                                    ->separator(',')
                                     ->alignRight(),
-                                //->tooltip(fn($record) => $record->nomor_surat)
 
                             ])->space(1),
 
@@ -102,24 +120,38 @@ class ServiceJadiResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->button(),
-                Tables\Actions\DeleteAction::make()
-                    ->button()
-                    ->action(function ($record) {
+                Tables\Actions\Action::make('sudah_diambil')
+                    ->label('Sudah Diambil')
+                    ->button(),
+                Tables\Actions\Action::make('chat_konfirmasi')
+                    ->label('Kabarin Dia')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->color('success')
+                    ->url(function ($record) {
+                        // 1. Ambil data dari record
+                        $namaPelanggan = $record->dataClient->nama ?? 'Pelanggan';
+                        $nomorWa = $record->dataClient->nomor_wa ?? '';
+                        $total = $record->total_biaya ?? 0; // Pastikan nama kolom biaya sesuai
+                        $linkTracking = url("/tracking/{$record->token}"); // Sesuaikan route tracking kamu
 
-                        LogService::create([
-                            'category_id'         => $record->category_id,
-                            'data_client_id'      => $record->data_client_id,
-                            'nama_barang'         => $record->nama_barang,
-                            'tanggal_pengambilan' => now(),
-                            'services'            => $record->services,
-                            'total_biaya'         => $record->total_biaya,
-                            'garansi'             => $record->garansi,
-                        ]);
+                        // 2. Format Nomor WA
+                        $formattedNumber = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $nomorWa));
 
-                        $record->delete();
+                        // 3. Susun Pesan sesuai format kemarin
+                        $pesan = "Asallamuallaikum {$namaPelanggan}\n\n" .
+                            "Unit service Anda telah *SELESAI* dikerjakan.\n\n" .
+                            "Unit: {$record->nama_barang}\n" .
+                            "Total Biaya: Rp " . number_format($total, 0, ',', '.') . "\n" .
+                            "Garansi: " . ($record->garansi == 'None' || !$record->garansi ? 'Tanpa Garansi' : $record->garansi) . "\n\n" .
+                            "Silakan ambil unit Anda dengan menunjukkan *QR CODE* pengambilan pada link berikut:\n" .
+                            "{$linkTracking}\n\n" .
+                            "Hormat kami,\nAcegroup Service Center";
+
+                        // 4. Return URL
+                        return "https://api.whatsapp.com/send?phone={$formattedNumber}&text=" . urlencode($pesan);
                     })
-                    ->requiresConfirmation(),
+                    ->openUrlInNewTab()
+                    ->button(),
 
             ])
             ->bulkActions([

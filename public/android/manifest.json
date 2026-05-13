@@ -1,9 +1,9 @@
 {
     "name": "ACE SERVICE",
     "short_name": "ACE SERVICE",
-    "start_url": "/admin",
+    "start_url": "/app",
     "description": "Acegroup Service",
-    "display": "fullscreen",
+    "display": "standalone",
     "icons": [
         {
             "src": "ico.png",

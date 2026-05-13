@@ -30,40 +30,7 @@ class ServiceMasukResource extends Resource
     {
         return $form
             ->schema([
-
-                Forms\Components\Textarea::make('kerusakan')
-                    ->label('Kerusakan')
-                    ->required()
-                    ->columnSpanFull(),
-
-                Forms\Components\Textarea::make('keterangan')
-                    ->label('Keterangan Tambahan')
-                    ->columnSpanFull(),
-
-
-                Forms\Components\CheckboxList::make('perlengkapan')
-                    ->label('Perlengkapan')
-                    ->options([
-                        'tas' => 'Tas',
-                        'adaptor_charger' => 'Adaptor Charger',
-                        'kabel_power' => 'Kabel Power',
-                        'kabel_usb_print' => 'Kabel USB Print',
-                        'kardus' => 'Kardus',
-                        'battrai' => 'Battrai',
-                        'kesing_kanan' => 'Kesing Kanan',
-                        'kesing_kiri' => 'Kesing Kiri',
-                        'usb_data' => 'USB Data',
-                    ])
-                    ->columns(2),
-
-
-                Forms\Components\TextInput::make('nomor_surat')
-                    ->label('Nomor Surat')
-                    ->disabled(),
-
-                Forms\Components\ViewField::make('qrcode')
-                    ->label('QR Code')
-                    ->view('filament.components.qrcode'),
+                //
             ]);
     }
 
@@ -82,34 +49,22 @@ class ServiceMasukResource extends Resource
                             // Bagian kiri (informasi utama)
                             Stack::make([
 
-                                Tables\Columns\TextColumn::make('tanggal_masuk')
-                                    ->label('Masuk')
-                                    ->date('d M Y')
-                                    ->badge(),
-
-
-                                Tables\Columns\TextColumn::make('barang')
-                                    ->label('Barang')
+                                Tables\Columns\TextColumn::make('category.category')
                                     ->alignLeft()
-                                    //->badge()
-                                    ->html()
-                                    ->getStateUsing(
-                                        fn($record) =>
-                                        fn($record) =>
-                                        '<strong style="font-size: 1.25rem;">' . e($record->category->category) . ' ' . e($record->nama_barang) . '</strong>'
-
-                                    )
                                     ->searchable(),
 
-
-
+                                Tables\Columns\TextColumn::make('nama_barang')
+                                    ->alignLeft()
+                                    ->searchable(),
 
                                 Tables\Columns\TextColumn::make('kerusakan')
-                                    ->wrap()
                                     ->lineClamp(3)
                                     ->extraAttributes([
                                         'style' => 'max-width: 250px;',
                                     ])
+                                    ->badge()
+                                    ->color('danger')
+                                    ->listWithLineBreaks()
                                     ->searchable(),
 
 
@@ -132,6 +87,12 @@ class ServiceMasukResource extends Resource
                                     ->searchable()
                                     ->alignRight(),
 
+                                Tables\Columns\TextColumn::make('tanggal_masuk')
+                                    ->label('Masuk')
+                                    ->date('d M Y')
+                                    ->badge()
+                                    ->alignRight(),
+
                             ])->space(1),
 
                         ])
@@ -148,21 +109,33 @@ class ServiceMasukResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('Kerjakan')
+                    ->label('Proses')
                     ->button()
+                    ->icon('heroicon-o-wrench-screwdriver')
                     ->action(function ($record) {
 
                         // ⬇️ pindahkan data
                         ServiceProses::create([
-                            'category_id'   => $record->category_id,
+                            'category_id'    => $record->category_id,
                             'data_client_id' => $record->data_client_id,
-                            'nama_barang'   => $record->nama_barang,
-                            'nomor_surat'   => $record->nomor_surat,
-                            'qrcode'        => $record->qrcode,
-                            'tanggal_masuk' => $record->tanggal_masuk,
-                            'kerusakan'     => $record->kerusakan,
-                            'perlengkapan'  => $record->perlengkapan,
-                            'keterangan'    => $record->keterangan,
-                            'status'        => 'Proses',
+                            'nama_barang'    => $record->nama_barang,
+                            'nomor_surat'    => $record->nomor_surat,
+                            'qrcode'         => $record->qrcode,
+                            'tanggal_masuk'  => $record->tanggal_masuk,
+                            'kerusakan'      => $record->kerusakan,
+                            'perlengkapan'   => $record->perlengkapan,
+                            'keterangan'     => $record->keterangan,
+                            'token'          => $record->token,
+
+                            // Format harus ARRAY OF ARRAYS agar bisa dibaca Repeater
+                            'log_status'     => [
+                                [
+                                    'status'     => 'Proses Cek',
+                                    'tanggal'    => now()->toDateTimeString(),
+                                    'keterangan' => 'Unit mulai dikerjakan oleh teknisi.',
+                                ]
+                            ],
+
                             'user_id'        => auth()->id(),
                         ]);
 
@@ -170,7 +143,6 @@ class ServiceMasukResource extends Resource
                         $record->delete();
                     }),
 
-                Tables\Actions\ViewAction::make()->button()->color('success'),
 
 
             ])

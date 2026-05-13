@@ -16,6 +16,7 @@ class ServiceJadi extends Model
         'tanggal_selesai',
         'garansi',
         'services',
+        'potongan_biaya',
         'total_biaya',
         'log_status',
         'token',
@@ -24,6 +25,7 @@ class ServiceJadi extends Model
     protected $casts = [
         'tanggal_masuk' => 'date',
         'tanggal_selesai' => 'date',
+        'potongan_biaya' => 'string',
         'services' => 'array',
         'log_status' => 'array',
     ];

@@ -39,7 +39,8 @@ class AdminPanelProvider extends PanelProvider
                 'panels::head.end',
                 fn(): string => '
         <!-- PWA -->
-        <meta name="theme-color" content="#fff"/>
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
         <link rel="apple-touch-icon" href="' . asset('ico.png') . '">
         <link rel="manifest" href="' . url('/manifest.json') . '">
 

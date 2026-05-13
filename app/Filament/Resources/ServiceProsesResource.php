@@ -222,7 +222,6 @@ class ServiceProsesResource extends Resource
 
                                 TextInput::make('biaya')
                                     ->numeric()
-                                    ->minValue(0)
                                     ->required()
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
@@ -239,22 +238,22 @@ class ServiceProsesResource extends Resource
                             ->minItems(1),
 
                         // 🔥 Tambahan Potongan
-                        TextInput::make('potongan_biaya')
-                            ->label('Potongan Biaya')
-                            ->numeric()
-                            ->minValue(0)
-                            ->default(0)
-                            ->prefix('Rp')
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                        // TextInput::make('potongan_biaya')
+                        //     ->label('Potongan Biaya')
+                        //     ->numeric()
+                        //     ->minValue(0)
+                        //     ->default(0)
+                        //     ->prefix('Rp')
+                        //     ->live(onBlur: true)
+                        //     ->afterStateUpdated(function ($state, callable $set, callable $get) {
 
-                                $services = $get('services') ?? [];
-                                $subtotal = collect($services)->sum('biaya');
+                        //         $services = $get('services') ?? [];
+                        //         $subtotal = collect($services)->sum('biaya');
 
-                                $potongan = $state ?? 0;
+                        //         $potongan = $state ?? 0;
 
-                                $set('total_biaya', max($subtotal - $potongan, 0));
-                            }),
+                        //         $set('total_biaya', max($subtotal - $potongan, 0));
+                        //     }),
 
                         TextInput::make('total_biaya')
                             ->label('Total Biaya')
@@ -293,7 +292,6 @@ class ServiceProsesResource extends Resource
                                 'tanggal_selesai' => now(),
                                 'garansi'         => $data['garansi'],
                                 'services'        => $data['services'],
-                                'potongan_biaya'  => $potongan,
                                 'total_biaya'     => $total,
                                 'log_status'      => $riwayatLengkap,
                                 'teknisi_id'      => auth()->id(),

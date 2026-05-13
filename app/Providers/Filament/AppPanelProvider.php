@@ -32,9 +32,10 @@ class AppPanelProvider extends PanelProvider
                 'panels::head.end',
                 fn(): string => '
         <!-- PWA -->
-        <meta name="theme-color" content="#6777ef"/>
-        <link rel="apple-touch-icon" href="' . asset('logo.png') . '">
-        <link rel="manifest" href="' . url('/manifest.json') . '">
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+        <link rel="apple-touch-icon" href="' . asset('ico.png') . '">
+        <link rel="manifest" href="' . url('/android/manifest.json') . '">
 
         <script>
             if ("serviceWorker" in navigator) {
