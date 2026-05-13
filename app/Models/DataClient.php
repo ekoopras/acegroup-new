@@ -15,7 +15,7 @@ class DataClient extends Model
         'services' => 'array',
     ];
 
-    // Model Client.php
+    // function huruf kapital
     public function setNamaAttribute($value)
     {
         $this->attributes['nama'] = ucwords(strtolower($value));

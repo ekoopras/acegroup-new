@@ -35,6 +35,26 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarWidth('13rem')
             ->sidebarCollapsibleOnDesktop()
             ->theme(asset('css/filament/admin/theme.css'))
+            ->renderHook(
+                'panels::head.end',
+                fn(): string => '
+        <!-- PWA -->
+        <meta name="theme-color" content="#fff"/>
+        <link rel="apple-touch-icon" href="' . asset('ico.png') . '">
+        <link rel="manifest" href="' . url('/manifest.json') . '">
+
+        <script>
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.register("/sw.js", { scope: "/app/" })
+                .then(function(reg) {
+                    console.log("SW registered:", reg);
+                }).catch(function(err) {
+                    console.log("SW failed:", err);
+                });
+            }
+        </script>
+    '
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
