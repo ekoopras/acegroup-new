@@ -33,6 +33,11 @@ class Pelayanan extends Page
 
     protected static string $view = 'filament.app.pages.pelayanan';
 
+    public function getTitle(): string
+    {
+        return '';
+    }
+
 
     public ?ServiceMasuk $servicePreview = null;
     public array $serviceIds = [];

@@ -24,6 +24,7 @@ class ServiceJadiResource extends Resource
     protected static ?int $navigationSort = 3;
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
+    protected static ?string $navigationLabel = 'Service Jadi';
 
 
     public static function form(Form $form): Form

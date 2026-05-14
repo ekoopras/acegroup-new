@@ -245,25 +245,55 @@ class ServiceMasukResource extends Resource
                         $record->delete();
                     }),
 
+                Tables\Actions\Action::make('print')
+                    ->label('Print')
+                    ->icon('heroicon-o-printer')
+                    ->color('info')
+                    ->button()
+                    ->url(fn($record) => route('service.print', $record->id))
+                    ->openUrlInNewTab(),
+
+                Tables\Actions\Action::make('whatsapp')
+                    ->label('Chat Dia')
+                    ->button()
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->color('success')
+                    ->url(function ($record) {
+                        // 1. Ambil data dari relasi
+                        $client = $record->dataClient;
+                        $categoryName = $record->category->category ?? 'Unit';
+
+                        // 2. Format Kerusakan & Perlengkapan (Cek jika array atau string)
+                        $kerusakanText = is_array($record->kerusakan) ? implode(', ', $record->kerusakan) : ($record->kerusakan ?? '-');
+                        $perlengkapanText = is_array($record->perlengkapan) ? implode(', ', $record->perlengkapan) : ($record->perlengkapan ?? '-');
+
+                        // 3. Link Tracking
+                        $linkTracking = url("/tracking/{$record->token}");
+
+                        // 4. Susun Pesan
+                        $pesan = "Asallamuallaikum *{$client->nama}*\n\n";
+                        $pesan .= "Service anda sudah kami terima. Berikut rincian unit anda:\n\n";
+
+                        $pesan .= "Unit: *{$categoryName} {$record->nama_barang}*\n";
+                        $pesan .= "No. Surat: {$record->nomor_surat}\n";
+                        $pesan .= "Trouble: {$kerusakanText}\n";
+                        $pesan .= "Kelengkapan: {$perlengkapanText}\n";
+                        $pesan .= "Tracking: {$linkTracking}\n";
+                        $pesan .= "----------------------------\n\n";
+
+                        $pesan .= "Untuk pengambilan unit akan kami infokan kembali dengan QR Code pengambilan.\n\n";
+                        $pesan .= "Hormat kami,\n*Acegroup Service Center*";
+
+                        // 5. Format Nomor WA (Ubah 0 jadi 62)
+                        $nomor_wa = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $client->nomor_wa));
+
+                        // 6. Return Link WhatsApp
+                        return "https://api.whatsapp.com/send?phone={$nomor_wa}&text=" . urlencode($pesan);
+                    })
+                    ->openUrlInNewTab(),
+
 
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\Action::make('whatsapp')
-                        ->label('')
-                        ->button()
-                        ->icon('heroicon-o-chat-bubble-left-right')
-                        ->color('success') // HIJAU
-                        ->url(
-                            fn($record) =>
-                            'https://wa.me/' . $record->dataClient->nomor_wa
-                        )
-                        ->openUrlInNewTab(),
-                    Tables\Actions\Action::make('print')
-                        ->label('')
-                        ->icon('heroicon-o-printer')
-                        ->color('info')
-                        ->button()
-                        ->url(fn($record) => route('service.print', $record->id))
-                        ->openUrlInNewTab(),
                     Tables\Actions\ViewAction::make()
                         ->label('')
                         ->button(),
