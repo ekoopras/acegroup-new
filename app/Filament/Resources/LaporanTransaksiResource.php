@@ -71,7 +71,7 @@ class LaporanTransaksiResource extends Resource
 
                 TextColumn::make('nama_barang')
                     ->label('Unit Barang')
-                    ->description(fn($record) => "Kategori: " . ($record->category->nama ?? '-'))
+                    ->description(fn($record) => "Kategori: " . ($record->category->category ?? '-'))
                     ->searchable(),
 
                 TextColumn::make('teknisi')
@@ -104,13 +104,13 @@ class LaporanTransaksiResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                //Tables\Actions\ViewAction::make(),
+                //Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                // Tables\Actions\BulkActionGroup::make([
+                //     //Tables\Actions\DeleteBulkAction::make(),
+                // ]),
             ]);
     }
 
@@ -125,9 +125,9 @@ class LaporanTransaksiResource extends Resource
     {
         return [
             'index' => Pages\ListLaporanTransaksis::route('/'),
-            'create' => Pages\CreateLaporanTransaksi::route('/create'),
-            'view' => Pages\ViewLaporanTransaksi::route('/{record}'),
-            'edit' => Pages\EditLaporanTransaksi::route('/{record}/edit'),
+            //'create' => Pages\CreateLaporanTransaksi::route('/create'),
+            //'view' => Pages\ViewLaporanTransaksi::route('/{record}'),
+            //'edit' => Pages\EditLaporanTransaksi::route('/{record}/edit'),
         ];
     }
 

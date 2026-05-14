@@ -59,15 +59,6 @@
                             </span>
                         </div>
 
-                        <!-- INPUT NOMOR NOTA (DI HALAMAN UTAMA) -->
-                        <div class="pt-4 border-t">
-                            <label class="text-sm font-medium mb-1 block">Nomor Nota Manual</label>
-                            <x-filament::input.wrapper>
-                                <x-filament::input type="text" placeholder="Masukkan nomor nota fisik..."
-                                    wire:model="nomor_nota" />
-                            </x-filament::input.wrapper>
-                        </div>
-
                         <!-- TOMBOL PEMBAYARAN -->
                         <div class="grid grid-cols-2 gap-4">
                             {{ $this->bayar_cash }}

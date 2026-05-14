@@ -66,6 +66,8 @@ class ServiceProsesResource extends Resource
                             ->label('Teknisi')
                             ->options(User::all()->pluck('name', 'id')) // Mengambil nama dari UserResource
                             ->default(auth()->id())
+                            ->disabled()           // Mengunci agar tidak bisa diubah
+                            ->dehydrated(true)
                             ->searchable()
                             ->native(false),
 
@@ -208,12 +210,23 @@ class ServiceProsesResource extends Resource
                             ]),
 
                             Stack::make([
-                                Tables\Columns\TextColumn::make('user.name')
+                                Tables\Columns\TextColumn::make('teknisi_terakhir')
                                     ->label('Teknisi')
                                     ->badge()
-                                    ->alignRight()
                                     ->color('success')
-                                    ->searchable(),
+                                    ->getStateUsing(function ($record) {
+                                        $logs = $record->log_status;
+                                        if (is_array($logs) && !empty($logs)) {
+                                            $lastLog = end($logs);
+                                            // Ambil ID teknisi dari log terakhir
+                                            $teknisiId = $lastLog['teknisi_id'] ?? null;
+
+                                            if ($teknisiId) {
+                                                return \App\Models\User::find($teknisiId)?->name ?? 'Anonim';
+                                            }
+                                        }
+                                        return 'Belum Ditentukan';
+                                    }),
                             ])
                         ]),
 

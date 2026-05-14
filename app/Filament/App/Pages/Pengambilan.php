@@ -10,10 +10,12 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
 use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
 
 class Pengambilan extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static ?string $navigationIcon = 'heroicon-o-qr-code';
+    protected static ?string $navigationLabel = 'Pengambilan';
 
     protected static string $view = 'filament.app.pages.pengambilan';
 
@@ -54,7 +56,21 @@ class Pengambilan extends Page
                 ->icon('heroicon-o-banknotes')
                 ->requiresConfirmation()
                 // HANYA kirim 1 argumen (metode)
-                ->action(fn() => $this->prosesSelesai('cash')),
+                ->form([
+                    TextInput::make('nomor_nota')
+                        ->label('Nomor Nota Manual')
+                        ->placeholder('Masukkan nomor nota dari buku fisik...')
+                        ->required() // Mewajibkan teknisi mengisi nota
+                        ->default(fn() => $this->nomor_nota), // Mengambil default dari property class jika ada
+                ])
+                // HANYA kirim 1 argumen (metode)
+                ->action(function (array $data) {
+                    // Simpan nomor nota yang diinput ke property class sebelum proses
+                    $this->nomor_nota = $data['nomor_nota'];
+
+                    // Panggil fungsi proses
+                    $this->prosesSelesai('cash');
+                }),
 
             Action::make('bayar_transfer')
                 ->label('Bayar Transfer')
@@ -63,8 +79,23 @@ class Pengambilan extends Page
                 ->modalHeading('Pembayaran Via Transfer')
                 ->modalContent(view('filament.components.rekening-info'))
                 ->requiresConfirmation()
+                ->form([
+                    TextInput::make('nomor_nota')
+                        ->label('Nomor Nota Manual')
+                        ->placeholder('Masukkan nomor nota dari buku fisik...')
+                        ->required() // Mewajibkan teknisi mengisi nota
+                        ->default(fn() => $this->nomor_nota), // Mengambil default dari property class jika ada
+                ])
                 // HANYA kirim 1 argumen (metode)
-                ->action(fn() => $this->prosesSelesai('transfer')),
+                ->action(function (array $data) {
+                    // Simpan nomor nota yang diinput ke property class sebelum proses
+                    $this->nomor_nota = $data['nomor_nota'];
+
+                    // Panggil fungsi proses
+                    $this->prosesSelesai('transfer');
+                })
+                ->slideOver()
+                ->modalWidth('full'),
 
             Action::make('cancel_free')
                 ->label('Cancel Biaya Free')
@@ -107,7 +138,6 @@ class Pengambilan extends Page
                 'nama_barang'    => $unit->nama_barang,
                 'nomor_nota'     => $nota, // Diisi dari $this->nomor_nota
                 'tanggal'        => now(),
-                'potongan_biaya' => $data['potongan_biaya'] ?? 0,
                 'total_bayar'    => $unit->total_biaya,
                 'metode_bayar'   => $metode,
                 'teknisi'        => $namaTeknisi ?: 'Staff',
@@ -158,17 +188,5 @@ class Pengambilan extends Page
             ->send();
 
         $this->unitId = null;
-    }
-
-    // Menolak akses ke halaman (Authorization)
-    public static function canViewAny(): bool
-    {
-        return auth()->user()->isSuperAdmin();
-    }
-
-    // Menghilangkan menu dari sidebar (UI Navigation)
-    public static function shouldRegisterNavigation(): bool
-    {
-        return auth()->user()->isSuperAdmin();
     }
 }

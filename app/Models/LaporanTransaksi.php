@@ -22,4 +22,9 @@ class LaporanTransaksi extends Model
     {
         return $this->belongsTo(DataClient::class);
     }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 }
