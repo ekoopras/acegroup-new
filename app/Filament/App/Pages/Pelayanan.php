@@ -11,6 +11,7 @@ use App\Models\DataClient;
 use App\Models\ServiceMasuk;
 use App\Models\Category;
 use App\Models\Kerusakan;
+use App\Services\PrintService;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
@@ -239,10 +240,29 @@ class Pelayanan extends Page
                 ->modalCancelAction(false)
                 ->modalActions([
                     Action::make('print')
-                        ->label('🖨 Print Semua')
+                        ->label('🖨 Print Local')
                         ->action(function () {
                             foreach ($this->serviceIds as $id) {
                                 $this->js("window.open('" . route('service.print', $id) . "', '_blank');");
+                            }
+                        }),
+
+                    Action::make('printwifi')
+                        ->label('🖨 Print Wifi')
+                        ->color('success')
+                        ->action(function () {
+
+                            foreach ($this->serviceIds as $id) {
+
+                                $service = ServiceMasuk::find($id);
+
+                                PrintService::send(
+                                    'pdf.service',
+                                    [
+                                        'service' => $service
+                                    ],
+                                    'service-' . $service->id . '.pdf'
+                                );
                             }
                         }),
 

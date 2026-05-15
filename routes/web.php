@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AndroidController;
 use App\Http\Controllers\ServiceMasukController;
+use App\Services\PrintService;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {

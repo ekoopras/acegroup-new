@@ -10,7 +10,7 @@ class ServiceMasukController extends Controller
 {
     public function print(ServiceMasuk $service)
     {
-        return view('print.service', compact('service'));
+        return view('pdf.service', compact('service'));
     }
 
     public function track($token)
