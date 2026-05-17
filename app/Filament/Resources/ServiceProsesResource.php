@@ -385,7 +385,6 @@ class ServiceProsesResource extends Resource
                                 'tanggal_selesai' => now(),
                                 'garansi'         => 'None', // Otomatis tanpa garansi
                                 'services'        => [['service' => 'Pembatalan: ' . $data['alasan_batal'], 'biaya' => 0]], // Input riwayat service kosong
-                                'potongan_biaya'  => 0,
                                 'total_biaya'     => 0, // Paksa 0
                                 'log_status'      => $riwayatLengkap,
                                 'teknisi_id'      => auth()->id(),

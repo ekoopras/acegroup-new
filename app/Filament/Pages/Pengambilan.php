@@ -21,9 +21,10 @@ class Pengambilan extends Page implements HasForms, HasActions
     use InteractsWithForms, InteractsWithActions;
 
     protected static ?string $navigationIcon = 'heroicon-o-qr-code';
-    protected static string $view = 'filament.pages.pengambilan';
     protected static ?string $navigationGroup = 'Pelayanan';
     protected static ?string $navigationLabel = 'Pengambilan';
+
+    protected static string $view = 'filament.pages.pengambilan';
 
     public $search = '';
     public $unitId = null;

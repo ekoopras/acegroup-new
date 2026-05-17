@@ -25,6 +25,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Forms\Components\Group;
+use Illuminate\Support\Facades\URL;
 
 class Pelayanan extends Page
 {
@@ -238,6 +239,8 @@ class Pelayanan extends Page
                 ->modalWidth('lg')
                 ->modalSubmitAction(false)
                 ->modalCancelAction(false)
+                ->slideOver()
+                ->modalWidth('full')
                 ->modalActions([
                     Action::make('print')
                         ->label('🖨 Print Local')
@@ -247,23 +250,56 @@ class Pelayanan extends Page
                             }
                         }),
 
-                    Action::make('printwifi')
-                        ->label('🖨 Print Wifi')
+                    Action::make('print_wifi')
+                        ->label('🖨 Print WiFi')
                         ->color('success')
                         ->action(function () {
 
-                            foreach ($this->serviceIds as $id) {
+                            $json = json_encode([
+                                'id' => $this->servicePreview->id,
+                                'nama' => $this->servicePreview->dataClient->nama ?? '-',
+                                'nomor_wa' => $this->servicePreview->dataClient->nomor_wa ?? '-',
+                                'category' => $this->servicePreview->category->category ?? '-',
+                                'barang' => $this->servicePreview->nama_barang ?? '-',
+                                'tanggal_masuk' => $this->servicePreview->tanggal_masuk ?? '-',
+                                'kerusakan' => $this->servicePreview->kerusakan ?? '-',
+                                'keterangan' => $this->servicePreview->keterangan ?? '-',
+                                'perlengkapan' => $this->servicePreview->perlengkapan ?? '-',
+                                'pdf_url' => route('service.print', $this->servicePreview->id),
+                            ]);
 
-                                $service = ServiceMasuk::find($id);
+                            $this->js("
+                                const data = $json;
 
-                                PrintService::send(
-                                    'pdf.service',
-                                    [
-                                        'service' => $service
-                                    ],
-                                    'service-' . $service->id . '.pdf'
-                                );
-                            }
+                                console.log('PRINT WIFI DATA:', data);
+
+                                fetch('http://kambing.local/print', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(data)
+                                })
+                                .then(response => response.json())
+                                .then(result => {
+
+                                    console.log('PRINT RESULT:', result);
+
+                                    if(result.status === 'success') {
+                                        alert('Print berhasil');
+                                    } else {
+                                        alert('Print gagal');
+                                    }
+
+                                })
+                                .catch(error => {
+
+                                    console.error('PRINT ERROR:', error);
+
+                                    alert('Tidak dapat terhubung ke STB / Printer');
+
+                                });
+                            ");
                         }),
 
                     Action::make('wa')
@@ -277,6 +313,7 @@ class Pelayanan extends Page
                 ])),
         ];
     }
+
 
     private function sendWhatsapp($client, $services): string
     {

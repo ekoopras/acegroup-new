@@ -147,6 +147,7 @@
                             <span class="label">BARANG</span>
                             <span class="separator">:</span>
                             <span class="value">
+                                {{ strtoupper($service->category->category ?? '-') }}
                                 {{ strtoupper($service->nama_barang ?? '-') }}
                             </span>
                         </div>

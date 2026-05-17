@@ -35,6 +35,10 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarWidth('13rem')
             ->sidebarCollapsibleOnDesktop()
             ->theme(asset('css/filament/admin/theme.css'))
+            //->brandLogo(fn() => view('admin.logo'))
+            ->brandName('ACEGROUP SERVICE')
+            ->favicon(asset('ico.png'))
+            ->font('Poppins')
             ->renderHook(
                 'panels::head.end',
                 fn(): string => '

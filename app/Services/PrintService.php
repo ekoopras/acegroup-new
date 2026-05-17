@@ -19,7 +19,7 @@ class PrintService
             'file',
             file_get_contents($path),
             $filename
-        )->post('http://192.168.1.19:5000/print');
+        )->post('http://10.10.10.2:5000/print');
     }
 
     // public static function send($view, $data = [], $filename = 'print.pdf')

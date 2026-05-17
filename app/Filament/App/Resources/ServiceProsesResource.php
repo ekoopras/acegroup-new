@@ -57,9 +57,9 @@ class ServiceProsesResource extends Resource
                                 'Deal' => 'Deal (Pengerjaan Disetujui)',
                                 'Proses Pengerjaan' => 'Proses Pengerjaan',
                                 'Trial' => 'Trial',
-                                'Selesai' => 'Selesai',
                             ])
                             ->required()
+                            ->placeholder('pilih')
                             ->native(false),
 
                         Select::make('teknisi_id')
@@ -110,8 +110,7 @@ class ServiceProsesResource extends Resource
                                         'Pending' => 'danger',   // merah
                                         'Deal' => 'success',   // merah
                                         default => 'gray',
-                                    })
-                                    ->searchable(),
+                                    }),
 
                                 Tables\Columns\TextColumn::make('category.category')
                                     ->alignLeft()
@@ -383,6 +382,99 @@ class ServiceProsesResource extends Resource
                     })
                     ->slideOver()
                     ->modalWidth('full')
+                    ->button(),
+
+                Tables\Actions\Action::make('cancel')
+                    ->label('Cancel')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->form([
+                        Forms\Components\Select::make('alasan_batal')
+                            ->label('Alasan Pembatalan')
+                            ->options([
+                                'Part Kosong' => 'Part Kosong / Tidak Tersedia',
+                                'User Tidak Deal' => 'User Tidak Setuju Biaya (Cancel User)',
+                                'Tidak Bisa Diperbaiki' => 'Kondisi Unit Tidak Memungkinkan (Gagal)',
+                                'Resiko Terlalu Tinggi' => 'Resiko Terlalu Tinggi',
+                            ])
+                            ->required(),
+
+                        Forms\Components\Textarea::make('catatan_tambahan')
+                            ->label('Catatan Teknisi')
+                            ->placeholder('Jelaskan alasan teknis di sini...')
+                            ->rows(3),
+
+                        Forms\Components\TextInput::make('total_biaya')
+                            ->label('Total Biaya')
+                            ->default(0)
+                            ->prefix('Rp')
+                            ->disabled() // Dikunci karena Free
+                            ->dehydrated(true),
+                    ])
+                    ->action(function ($record, array $data) {
+                        // 1. Ambil riwayat log lama & tambah status "Cancel / Gagal"
+                        $riwayatLengkap = $record->log_status ?? [];
+                        $riwayatLengkap[] = [
+                            'status'     => 'Cancel / Gagal',
+                            'tanggal'    => now()->toDateTimeString(),
+                            'keterangan' => 'Unit tidak lanjut pengerjaan: ' . $data['alasan_batal'] . '. ' . ($data['catatan_tambahan'] ?? ''),
+                        ];
+
+                        // 2. Pindahkan ke ServiceJadi dengan biaya 0 (DB Transaction agar aman)
+                        $jadi = DB::transaction(function () use ($record, $data, $riwayatLengkap) {
+                            $newEntry = \App\Models\ServiceJadi::create([
+                                'category_id'     => $record->category_id,
+                                'data_client_id'  => $record->data_client_id,
+                                'nama_barang'     => $record->nama_barang,
+                                'nomor_surat'     => $record->nomor_surat,
+                                'qrcode'          => $record->qrcode,
+                                'token'           => $record->token,
+                                'tanggal_masuk'   => $record->tanggal_masuk,
+                                'tanggal_selesai' => now(),
+                                'garansi'         => 'None', // Otomatis tanpa garansi
+                                'services'        => [['service' => 'Pembatalan: ' . $data['alasan_batal'], 'biaya' => 0]], // Input riwayat service kosong
+                                'total_biaya'     => 0, // Paksa 0
+                                'log_status'      => $riwayatLengkap,
+                                'teknisi_id'      => auth()->id(),
+                            ]);
+
+                            $record->delete(); // Hapus dari proses
+                            return $newEntry;
+                        });
+
+                        // 3. Siapkan Link & Pesan WhatsApp Khusus Pembatalan
+                        $namaPelanggan = $jadi->dataClient->nama ?? 'Pelanggan';
+                        $nomorWA = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $jadi->dataClient->nomor_wa));
+                        $linkTracking = url("/tracking/{$jadi->token}");
+
+                        $pesan = "Asallamuallaikum {$namaPelanggan}\n\n" .
+                            "Kami menginfokan bahwa unit service Anda *DIBATALKAN/GAGAL*.\n\n" .
+                            "Unit: {$jadi->nama_barang}\n" .
+                            "Alasan: {$data['alasan_batal']}\n" .
+                            "Biaya: *FREE (Rp 0)*\n\n" .
+                            "Silakan ambil unit Anda kembali dengan menunjukkan *QR CODE* pengambilan pada link berikut:\n" .
+                            "{$linkTracking}\n\n" .
+                            "Hormat kami,\nAcegroup Service Center";
+
+                        $waUrl = "https://wa.me/{$nomorWA}?text=" . urlencode($pesan);
+
+                        // 4. Notifikasi Berhasil
+                        \Filament\Notifications\Notification::make()
+                            ->title('Unit Dibatalkan')
+                            ->body('Data telah dipindahkan ke rak "Jadi" dengan biaya Rp 0.')
+                            ->danger() // Warna merah untuk indikasi cancel
+                            ->persistent()
+                            ->actions([
+                                \Filament\Notifications\Actions\Action::make('kirim_wa')
+                                    ->label('Kirim WhatsApp')
+                                    ->icon('heroicon-o-chat-bubble-left-right')
+                                    ->color('success')
+                                    ->url($waUrl)
+                                    ->openUrlInNewTab(),
+                            ])
+                            ->send();
+                    })
+                    ->requiresConfirmation()
                     ->button(),
             ])
             ->bulkActions([

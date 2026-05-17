@@ -83,11 +83,18 @@
                         <div class="bg-blue-600 rounded-2xl p-6 text-center text-white shadow-lg shadow-blue-100">
                             <span class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">Status Saat
                                 Ini</span>
-                            <h5 class="text-xl font-black mt-1 uppercase">{{ $current['status'] ?? 'PROSES' }}</h5>
+
+                            <!-- 🛠️ PERBAIKAN: Ambil status dari log paling pertama -->
+                            <h5 class="text-xl font-black mt-1 uppercase">
+                                {{ $logs->first()['status'] ?? ($current['status'] ?? 'PROSES') }}
+                            </h5>
+
                             <div
                                 class="mt-3 inline-flex items-center gap-2 bg-blue-700/50 px-3 py-1 rounded-full text-[10px]">
                                 <span class="h-2 w-2 bg-blue-300 rounded-full animate-pulse"></span>
-                                Update: {{ \Carbon\Carbon::parse($current['tanggal'] ?? now())->format('d M Y H:i') }}
+                                <!-- 🛠️ PERBAIKAN: Ambil tanggal dari log paling pertama -->
+                                Update:
+                                {{ \Carbon\Carbon::parse($logs->first()['tanggal'] ?? ($current['tanggal'] ?? now()))->format('d M Y H:i') }}
                             </div>
                         </div>
 
