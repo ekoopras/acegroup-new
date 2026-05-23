@@ -53,8 +53,8 @@ class ServiceJadiResource extends Resource
                                 Tables\Columns\TextColumn::make('nomor_surat')
                                     ->badge()
                                     ->searchable(),
-                                Tables\Columns\TextColumn::make('dataClient.nama')
-                                    ->label('Nama Client')
+                                Tables\Columns\TextColumn::make('nama_pelanggan')
+                                    ->label('Nama Pelanggan')
                                     ->alignLeft()
                                     ->searchable(),
 
@@ -107,6 +107,13 @@ class ServiceJadiResource extends Resource
                                     ->separator(',')
                                     ->alignRight(),
 
+                                Tables\Columns\TextColumn::make('dataClient.nomor_wa')
+                                    ->label('Nama Client')
+                                    ->badge()
+                                    ->color('success')
+                                    ->searchable()
+                                    ->alignRight(),
+
                             ])->space(1),
 
                         ])
@@ -130,7 +137,7 @@ class ServiceJadiResource extends Resource
                     ->color('success')
                     ->url(function ($record) {
                         // 1. Ambil data dari record
-                        $namaPelanggan = $record->dataClient->nama ?? 'Pelanggan';
+                        $namaPelanggan = $record->nama_pelanggan ?? 'Pelanggan';
                         $nomorWa = $record->dataClient->nomor_wa ?? '';
                         $total = $record->total_biaya ?? 0; // Pastikan nama kolom biaya sesuai
                         $linkTracking = url("/tracking/{$record->token}"); // Sesuaikan route tracking kamu

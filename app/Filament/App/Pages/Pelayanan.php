@@ -74,21 +74,38 @@ class Pelayanan extends Page
                                 return [$client->id => "{$client->nama} - {$client->nomor_wa}"];
                             }))
                             ->live()
-                            ->afterStateUpdated(function ($state, Set $set) {
+                            ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                 if ($state) {
                                     $client = DataClient::find($state);
                                     if ($client) {
-                                        $set('nama', $client->nama);
+                                        $formattedName = ucwords($client->nama);
+
+                                        // 1. Isi form utama di luar repeater
+                                        $set('nama', $formattedName);
                                         $set('nomor_wa', $client->nomor_wa);
+
+                                        // 2. 🛠️ SINKRONKAN KE REPEATER: Ambil baris repeater yang sedang aktif saat ini
+                                        $services = $get('services') ?? [];
+                                        foreach ($services as $key => $service) {
+                                            $set("services.{$key}.nama_pelanggan", $formattedName);
+                                        }
                                     }
                                 }
                             })
                             ->columnSpanFull(),
 
                         TextInput::make('nama')
-                            ->label('Nama Client')
+                            ->label('Nama Kontak')
                             ->required()
-                            ->extraInputAttributes(['style' => 'text-transform: capitalize;']),
+                            ->extraInputAttributes(['style' => 'text-transform: capitalize;'])
+                            ->live(debounce: 500)
+                            ->afterStateUpdated(function (string $state, Set $set, Get $get) {
+                                $formattedName = ucwords($state);
+                                $services = $get('services') ?? [];
+                                foreach ($services as $key => $service) {
+                                    $set("services.{$key}.nama_pelanggan", $formattedName);
+                                }
+                            }),
 
                         TextInput::make('nomor_wa')
                             ->label('WhatsApp')
@@ -106,7 +123,16 @@ class Pelayanan extends Page
                         Grid::make(['default' => 1, 'lg' => 3])->schema([
                             Group::make([
                                 Grid::make(2)->schema([
+                                    Grid::make(1)->schema([
+                                        TextInput::make('nama_pelanggan')
+                                            ->label('Nama Pelanggan')
+                                            ->required()
+                                            ->extraInputAttributes(['style' => 'text-transform: capitalize;'])
+                                            // Menjaga agar jika admin klik "+ Tambah Barang" baru, namanya langsung terisi otomatis
+                                            ->default(fn(Get $get) => ucwords($get('../../nama') ?? '')),
+                                    ]),
                                     Grid::make(3)->schema([
+
                                         Select::make('category_id')
                                             ->label('Kategori')
                                             ->options(Category::pluck('category', 'id'))
@@ -195,6 +221,7 @@ class Pelayanan extends Page
             foreach ($this->data['services'] as $service) {
                 $createdService = ServiceMasuk::create([
                     'category_id'   => $service['category_id'],
+                    'nama_pelanggan'   => $service['nama_pelanggan'],
                     'nama_barang'   => $service['nama_barang'],
                     'data_client_id' => $currentClient->id,
                     'tanggal_masuk' => $service['tanggal_masuk'],
@@ -257,7 +284,7 @@ class Pelayanan extends Page
 
                             $json = json_encode([
                                 'id' => $this->servicePreview->id,
-                                'nama' => $this->servicePreview->dataClient->nama ?? '-',
+                                'nama_pelanggan' => $this->servicePreview->nama_pelanggan ?? '-',
                                 'nomor_wa' => $this->servicePreview->dataClient->nomor_wa ?? '-',
                                 'category' => $this->servicePreview->category->category ?? '-',
                                 'barang' => $this->servicePreview->nama_barang ?? '-',
@@ -273,7 +300,7 @@ class Pelayanan extends Page
 
                                 console.log('PRINT WIFI DATA:', data);
 
-                                fetch('http://kambing.local/print', {
+                                fetch('http://192.168.1.111:5000/print', {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json'
@@ -317,29 +344,67 @@ class Pelayanan extends Page
 
     private function sendWhatsapp($client, $services): string
     {
+        // Pastikan berupa array/koleksi yang bisa di-loop
         $items = $services ?? [];
 
-        $pesan = "Asallamuallaikum *{$client->nama}*\n\n";
+        // 1. 🛠️ CARI NAMA PELANGGAN (Hanya dicari 1x sebelum masuk perulangan barang)
+        $namaPelanggan = null;
+        foreach ($items as $item) {
+            if (is_array($item) && !empty($item['nama_pelanggan'])) {
+                $namaPelanggan = $item['nama_pelanggan'];
+                break;
+            } elseif (is_object($item) && !empty($item->nama_pelanggan)) {
+                $namaPelanggan = $item->nama_pelanggan;
+                break;
+            }
+        }
+
+        // Fallback jika baris repeater kosong semua
+        if (empty($namaPelanggan)) {
+            $namaPelanggan = $client->nama ?? ($client->dataClient->nama ?? 'Pelanggan');
+        }
+
+        $namaPelanggan = ucwords($namaPelanggan);
+
+        // 2. 🛠️ BERIKAN SAPAAN (Hanya muncul 1x di paling atas pesan)
+        $pesan = "Asallamuallaikum *{$namaPelanggan}*\n\n";
         $pesan .= "Service anda sudah kami terima. Berikut daftar unit anda:\n\n";
 
+        // 3. 🛠️ PERULANGAN BARANG (Hanya bagian ini yang akan diulang-ulang sesuai jumlah barang)
         foreach ($items as $index => $item) {
-            $categoryName = $item->category->category ?? 'Unit';
-            $kerusakanText = is_array($item->kerusakan) ? implode(', ', $item->kerusakan) : ($item->kerusakan ?? '-');
-            $perlengkapanText = is_array($item->perlengkapan) ? implode(', ', $item->perlengkapan) : ($item->perlengkapan ?? '-');
-            $linkTracking = url("/tracking/{$item->token}");
+
+            // Cek apakah $item berbentuk array atau object (Model) agar tidak memicu error baru
+            $isArr = is_array($item);
+
+            $categoryName = $isArr
+                ? (\App\Models\Category::find($item['category_id'] ?? null)?->category ?? 'Unit')
+                : ($item->category->category ?? 'Unit');
+
+            $namaBarang = $isArr ? ($item['nama_barang'] ?? '-') : ($item->nama_barang ?? '-');
+
+            $kerusakan = $isArr ? ($item['kerusakan'] ?? '-') : ($item->kerusakan ?? '-');
+            $kerusakanText = is_array($kerusakan) ? implode(', ', $kerusakan) : $kerusakan;
+
+            $perlengkapan = $isArr ? ($item['perlengkapan'] ?? '-') : ($item->perlengkapan ?? '-');
+            $perlengkapanText = is_array($perlengkapan) ? implode(', ', $perlengkapan) : $perlengkapan;
+
+            $token = $isArr ? ($item['token'] ?? '') : ($item->token ?? '');
+            $linkTracking = url("/tracking/{$token}");
 
             $no = $index + 1;
             $pesan .= "*No. {$no}*\n";
-            $pesan .= "Unit: {$categoryName} {$item->nama_barang}\n";
+            $pesan .= "Unit: {$categoryName} {$namaBarang}\n";
             $pesan .= "Trouble: {$kerusakanText}\n";
             $pesan .= "Kelengkapan: {$perlengkapanText}\n";
             $pesan .= "Tracking: {$linkTracking}\n";
             $pesan .= "----------------------------\n";
         }
 
+        // 4. penutup pesan (Hanya muncul 1x di paling bawah)
         $pesan .= "\nUntuk pengambilan unit akan kami infokan kembali dengan QR Code pengambilan.\n\n";
         $pesan .= "Hormat kami,\n*Acegroup Service Center*";
 
+        // Nomor WA tujuan
         $nomor_wa = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $client->nomor_wa));
 
         return "https://api.whatsapp.com/send?phone={$nomor_wa}&text=" . urlencode($pesan);

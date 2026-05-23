@@ -10,6 +10,7 @@ class LaporanTransaksi extends Model
         'category_id',
         'data_client_id',
         'nomor_surat',
+        'nama_pelanggan',
         'nama_barang',
         'nomor_nota',
         'tanggal',

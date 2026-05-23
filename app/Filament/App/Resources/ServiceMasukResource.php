@@ -7,6 +7,8 @@ use App\Filament\App\Resources\ServiceMasukResource\RelationManagers;
 use App\Models\ServiceMasuk;
 use App\Models\ServiceProses;
 use Filament\Forms;
+use Filament\Forms\Components\Group;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -30,7 +32,118 @@ class ServiceMasukResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Section::make('Informasi Utama')
+                    ->description('Data dasar client dan administrasi.')
+                    ->schema([
+                        Forms\Components\Grid::make(3)->schema([
+                            Forms\Components\TextInput::make('nomor_surat')
+                                ->label('Nomor Surat')
+                                ->placeholder('Otomatis...')
+                                ->disabled()
+                                ->columnSpan(1),
+
+                            Forms\Components\Select::make('data_client_id')
+                                ->label('Nama Client')
+                                ->relationship('dataClient', 'nama')
+                                ->required()
+                                ->searchable()
+                                ->disabled()
+                                ->afterStateHydrated(function ($state, $set) {
+                                    $client = \App\Models\DataClient::find($state);
+                                    if ($client) {
+                                        $set('nomor_wa', $client->nomor_wa);
+                                    }
+                                })
+                                ->afterStateUpdated(function ($state, $set) {
+                                    $client = \App\Models\DataClient::find($state);
+                                    if ($client) {
+                                        $set('nomor_wa', $client->nomor_wa);
+                                    }
+                                })
+                                ->columnSpan(1),
+
+                            Forms\Components\TextInput::make('nomor_wa')
+                                ->label('Nomor WhatsApp')
+                                ->tel()
+                                ->disabled()
+                                ->dehydrated(false)
+                                ->placeholder('628xxx')
+                                ->helperText('Gunakan format 62')
+                                ->columnSpan(1),
+                        ]),
+                    ]),
+
+                // BAGIAN TENGAH: SPLIT LAYOUT (BARANG & PERLENGKAPAN)
+                Forms\Components\Grid::make(3)->schema([
+
+                    // SISI KIRI (BARANG & KERUSAKAN) - 2 Kolom
+                    Group::make([
+                        Section::make('Detail Unit')
+                            ->schema([
+                                Forms\Components\Grid::make(1)->schema([
+                                    Forms\Components\TextInput::make('nama_pelanggan')
+                                        ->label('Nama Pelanggan')
+                                        ->required()
+                                        ->extraInputAttributes(['style' => 'text-transform: capitalize;']),
+                                ]),
+                                Forms\Components\Grid::make(2)->schema([
+                                    Forms\Components\Select::make('category_id')
+                                        ->label('Kategori')
+                                        ->relationship('category', 'category')
+                                        ->searchable()
+                                        ->required(),
+
+                                    Forms\Components\TextInput::make('nama_barang')
+                                        ->label('Nama Barang')
+                                        ->required()
+                                        ->extraInputAttributes(['style' => 'text-transform: capitalize;']),
+                                ]),
+
+                                Forms\Components\DatePicker::make('tanggal_masuk')
+                                    ->label('Tanggal Masuk')
+                                    ->default(now())
+                                    ->required(),
+
+                                Forms\Components\Textarea::make('kerusakan')
+                                    ->label('Deskripsi Kerusakan')
+                                    ->placeholder('Contoh: Laptop mati total, sering restart sendiri...')
+                                    ->required()
+                                    ->rows(3),
+
+                                Forms\Components\Textarea::make('keterangan')
+                                    ->label('Keterangan Tambahan')
+                                    ->placeholder('Catatan khusus teknisi...')
+                                    ->rows(2),
+                            ]),
+                    ])->columnSpan(2),
+
+                    // SISI KANAN (PERLENGKAPAN & QR) - 1 Kolom
+                    Group::make([
+                        Section::make('Fisik & Validasi')
+                            ->schema([
+                                Forms\Components\CheckboxList::make('perlengkapan')
+                                    ->label('Perlengkapan yang Dibawa')
+                                    ->options([
+                                        'tas' => 'Tas',
+                                        'adaptor_charger' => 'Adaptor Charger',
+                                        'kabel_power' => 'Kabel Power',
+                                        'kabel_usb_print' => 'Kabel USB Print',
+                                        'kardus' => 'Kardus',
+                                        'battrai' => 'Baterai',
+                                        'kesing_kanan' => 'Kesing R',
+                                        'kesing_kiri' => 'Kesing L',
+                                        'usb_data' => 'USB Data',
+                                    ])
+                                    ->columns(1) // Satu kolom ke bawah agar rapi di sisi kanan
+                                    ->bulkToggleable(), // Fitur pilih semua
+
+                                Forms\Components\ViewField::make('qrcode')
+                                    ->label('QR Code Tracking')
+                                    ->view('filament.components.qrcode'),
+                            ]),
+                    ])->columnSpan(1),
+                ]),
+
             ]);
     }
 
@@ -73,8 +186,8 @@ class ServiceMasukResource extends Resource
                             // Bagian kanan (tanggal + QR)
                             Stack::make([
 
-                                Tables\Columns\TextColumn::make('dataClient.nama')
-                                    ->label('Nama Client')
+                                Tables\Columns\TextColumn::make('nama_pelanggan')
+                                    ->label('Nama Pelanggan')
                                     //->badge()
                                     //->color('danger')
                                     ->searchable()
@@ -118,6 +231,7 @@ class ServiceMasukResource extends Resource
                         ServiceProses::create([
                             'category_id'    => $record->category_id,
                             'data_client_id' => $record->data_client_id,
+                            'nama_pelanggan' => $record->nama_pelanggan,
                             'nama_barang'    => $record->nama_barang,
                             'nomor_surat'    => $record->nomor_surat,
                             'qrcode'         => $record->qrcode,
@@ -169,7 +283,7 @@ class ServiceMasukResource extends Resource
                         $linkTracking = url("/tracking/{$record->token}");
 
                         // 4. Susun Pesan
-                        $pesan = "Asallamuallaikum *{$client->nama}*\n\n";
+                        $pesan = "Asallamuallaikum *{$record->nama_pelanggan}*\n\n";
                         $pesan .= "Service anda sudah kami terima. Berikut rincian unit anda:\n\n";
 
                         $pesan .= "Unit: *{$categoryName} {$record->nama_barang}*\n";

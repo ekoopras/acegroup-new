@@ -41,33 +41,19 @@ class LaporanTransaksiResource extends Resource
                     ->sortable(),
 
                 TextColumn::make('nomor_surat')
-                    ->label('No. Sistem')
+                    ->label('Surat Terima')
                     ->searchable()
-                    ->copyable()
-                    ->description(fn($record) => "Nota Fisik: {$record->nomor_nota}"),
+                    ->copyable(),
 
-                // Update Kolom Pelanggan menggunakan relasi dataClient
-                TextColumn::make('dataClient.nama')
-                    ->label('Pelanggan')
-                    ->description(fn($record) => "WA: " . ($record->dataClient->nomor_wa ?? '-'))
+                TextColumn::make('nomor_nota')
+                    ->label('Nomor Nota')
                     ->searchable()
-                    ->color('primary')
-                    ->icon('heroicon-o-chat-bubble-left-right')
-                    // Logic WhatsApp yang lebih bersih
-                    ->url(function ($record) {
-                        $phone = $record->dataClient->nomor_wa ?? null;
-                        if ($phone && $phone !== '-') {
-                            // Menghapus karakter selain angka
-                            $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
-                            // Pastikan format nomor diawali 62 jika user input 08...
-                            if (str_starts_with($cleanPhone, '0')) {
-                                $cleanPhone = '62' . substr($cleanPhone, 1);
-                            }
-                            return "https://wa.me/{$cleanPhone}";
-                        }
-                        return null;
-                    })
-                    ->openUrlInNewTab(),
+                    ->copyable(),
+
+                TextColumn::make('nama_pelanggan')
+                    ->label('Nama pelanggan')
+                    ->searchable()
+                    ->copyable(),
 
                 TextColumn::make('nama_barang')
                     ->label('Unit Barang')

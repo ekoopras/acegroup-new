@@ -9,6 +9,7 @@ class ServiceJadi extends Model
     protected $fillable = [
         'category_id',
         'data_client_id',
+        'nama_pelanggan',
         'nama_barang',
         'nomor_surat',
         'qrcode',

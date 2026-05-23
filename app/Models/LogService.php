@@ -9,6 +9,7 @@ class LogService extends Model
     protected $fillable = [
         'category_id',
         'data_client_id',
+        'nama_pelanggan',
         'nama_barang',
         'tanggal_pengambilan',
         'services',

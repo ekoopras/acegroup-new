@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('category_id')->constrained()->cascadeOnDelete();
             $table->foreignId('data_client_id')->constrained()->cascadeOnDelete();
+            $table->string('nama_pelanggan');
             $table->string('nomor_surat')->unique();
             $table->string('nama_barang');
-
             $table->string('nomor_nota');
             $table->dateTime('tanggal');
             $table->decimal('total_bayar', 12, 2);

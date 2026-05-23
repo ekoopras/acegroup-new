@@ -135,8 +135,8 @@ class ServiceProsesResource extends Resource
                             // Bagian kanan (tanggal + QR)
                             Stack::make([
 
-                                Tables\Columns\TextColumn::make('dataClient.nama')
-                                    ->label('Nama Client')
+                                Tables\Columns\TextColumn::make('nama_pelanggan')
+                                    ->label('Nama Pelanggan')
                                     ->alignRight()
                                     ->searchable(),
 
@@ -237,6 +237,20 @@ class ServiceProsesResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make()->button(),
+                Tables\Actions\Action::make('whatsapp')
+                    ->label('Chat Dia')
+                    ->button()
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->color('success')
+                    ->url(function ($record) {
+                        // 1. Ambil data dari relasi
+                        $client = $record->dataClient;
+                        $nomor_wa = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $client->nomor_wa));
+                        // 6. Return Link WhatsApp
+                        return "https://api.whatsapp.com/send?phone={$nomor_wa}&text=";
+                    })
+                    ->openUrlInNewTab(),
+
                 Tables\Actions\Action::make('jadi')
                     ->label('Jadi')
                     ->icon('heroicon-o-check-circle')
@@ -331,6 +345,7 @@ class ServiceProsesResource extends Resource
                             $newEntry = \App\Models\ServiceJadi::create([
                                 'category_id'     => $record->category_id,
                                 'data_client_id'  => $record->data_client_id,
+                                'nama_pelanggan'  => $record->nama_pelanggan,
                                 'nama_barang'     => $record->nama_barang,
                                 'nomor_surat'     => $record->nomor_surat,
                                 'qrcode'          => $record->qrcode,
@@ -349,7 +364,7 @@ class ServiceProsesResource extends Resource
                         });
 
                         // 4. Siapkan Link & Pesan WhatsApp
-                        $namaPelanggan = $jadi->dataClient->nama ?? 'Pelanggan';
+                        $namaPelanggan = $jadi->nama_pelanggan ?? 'Pelanggan';
                         $nomorWA = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $jadi->dataClient->nomor_wa));
                         $linkTracking = url("/tracking/{$jadi->token}");
 
@@ -425,6 +440,7 @@ class ServiceProsesResource extends Resource
                             $newEntry = \App\Models\ServiceJadi::create([
                                 'category_id'     => $record->category_id,
                                 'data_client_id'  => $record->data_client_id,
+                                'nama_pelanggan'  => $record->nama_pelanggan,
                                 'nama_barang'     => $record->nama_barang,
                                 'nomor_surat'     => $record->nomor_surat,
                                 'qrcode'          => $record->qrcode,
@@ -443,7 +459,7 @@ class ServiceProsesResource extends Resource
                         });
 
                         // 3. Siapkan Link & Pesan WhatsApp Khusus Pembatalan
-                        $namaPelanggan = $jadi->dataClient->nama ?? 'Pelanggan';
+                        $namaPelanggan = $jadi->nama_pelanggan ?? 'Pelanggan';
                         $nomorWA = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $jadi->dataClient->nomor_wa));
                         $linkTracking = url("/tracking/{$jadi->token}");
 

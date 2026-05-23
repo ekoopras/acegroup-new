@@ -134,6 +134,7 @@ class Pengambilan extends Page
             LaporanTransaksi::create([
                 'category_id'    => $unit->category_id,
                 'data_client_id' => $unit->data_client_id,
+                'nama_pelanggan' => $unit->nama_pelanggan,
                 'nomor_surat'    => $unit->nomor_surat,
                 'nama_barang'    => $unit->nama_barang,
                 'nomor_nota'     => $nota, // Diisi dari $this->nomor_nota
@@ -146,6 +147,7 @@ class Pengambilan extends Page
             LogService::create([
                 'category_id'         => $unit->category_id,
                 'data_client_id'      => $unit->data_client_id,
+                'nama_pelanggan'      => $unit->nama_pelanggan,
                 'nama_barang'         => $unit->nama_barang,
                 'tanggal_pengambilan' => now(),
                 'services'            => $unit->services,
@@ -170,6 +172,7 @@ class Pengambilan extends Page
             LogService::create([
                 'category_id'         => $unit->category_id,
                 'data_client_id'      => $unit->data_client_id,
+                'nama_pelanggan'      => $unit->nama_pelanggan,
                 'nama_barang'         => $unit->nama_barang,
                 'tanggal_pengambilan' => now(),
                 'services'            => $unit->services, // Riwayat alasan cancel biasanya ada di sini

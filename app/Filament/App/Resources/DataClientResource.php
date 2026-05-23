@@ -23,6 +23,7 @@ class DataClientResource extends Resource
     protected static ?string $model = DataClient::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationLabel = 'Log Service';
 
     public static function form(Form $form): Form
     {

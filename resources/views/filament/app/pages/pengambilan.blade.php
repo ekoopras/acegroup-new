@@ -28,7 +28,7 @@
                         <div class="grid grid-cols-2 gap-4 text-sm">
                             <div class="border-b pb-2">
                                 <span class="text-gray-500 block text-xs">Pelanggan:</span>
-                                <span class="font-bold text-lg">{{ $this->unit->dataClient->nama ?? 'N/A' }}</span>
+                                <span class="font-bold text-lg">{{ $this->unit->nama_pelanggan ?? 'N/A' }}</span>
                             </div>
                             <div class="border-b pb-2">
                                 <span class="text-gray-500 block text-xs">Unit Barang</span>

@@ -139,7 +139,7 @@
                             <span class="label">NAMA</span>
                             <span class="separator">:</span>
                             <span class="value">
-                                {{ strtoupper($service->dataClient->nama ?? 'PELANGGAN') }}
+                                {{ strtoupper($service->nama_pelanggan ?? 'PELANGGAN') }}
                             </span>
                         </div>
 

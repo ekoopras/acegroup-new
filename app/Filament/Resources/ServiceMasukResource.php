@@ -79,6 +79,12 @@ class ServiceMasukResource extends Resource
                     Group::make([
                         Section::make('Detail Unit')
                             ->schema([
+                                Grid::make(1)->schema([
+                                    Forms\Components\TextInput::make('nama_pelanggan')
+                                        ->label('Nama Pelanggan')
+                                        ->required()
+                                        ->extraInputAttributes(['style' => 'text-transform: capitalize;']),
+                                ]),
                                 Grid::make(2)->schema([
                                     Forms\Components\Select::make('category_id')
                                         ->label('Kategori')
@@ -154,18 +160,8 @@ class ServiceMasukResource extends Resource
                 Tables\Columns\TextColumn::make('nama_barang')
                     ->searchable(),
 
-                // Tables\Columns\TextColumn::make('barang')
-                //     ->label('Barang')
-                //     ->html()
-                //     ->getStateUsing(
-                //         fn($record) =>
-                //         '<strong>' . e($record->category->category) . '</strong><br>' .
-                //             e($record->nama_barang)
-                //     )
-                //     ->searchable(),
-
-                Tables\Columns\TextColumn::make('dataClient.nama')
-                    ->label('Nama Client')
+                Tables\Columns\TextColumn::make('nama_pelanggan')
+                    ->label('Nama Pelanggan')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('tanggal_masuk')
@@ -180,118 +176,11 @@ class ServiceMasukResource extends Resource
                     ->listWithLineBreaks()
                     ->wrap(),
 
-                // Tables\Columns\ViewColumn::make('qrcode')
-                //     ->label('QR')
-                //     ->view('filament.tables.qrcode')
-                //     ->tooltip(fn($record) => $record->nomor_surat)
-                //     ->alignCenter(),
-
-                // Tables\Columns\TextColumn::make('token')
-                //     ->label('Tracking Link')
-                //     ->formatStateUsing(fn($state) => route('tracking.check', ['token' => $state]))
-                //     ->copyable() // Agar bisa diklik untuk copy link
-                //     ->color('primary')
-                //     ->icon('heroicon-o-link'),
-
-                // Tables\Columns\TextColumn::make('nomor_wa')
-                //     ->label('WhatsApp')
-                //     ->badge()
-                //     ->color('success')
-                //     ->icon('heroicon-o-chat-bubble-left-right')
-                //     ->url(fn($record) => 'https://wa.me/' . $record->nomor_wa)
-                //     ->openUrlInNewTab(),
-
-                // Tables\Columns\TextColumn::make('perlengkapan')
-                //     ->badge()
-                //     ->separator(',')
-                //     ->limit(3),
             ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\Action::make('Kerjakan')
-                    ->label('Proses')
-                    ->button()
-                    ->icon('heroicon-o-wrench-screwdriver')
-                    ->action(function ($record) {
-
-                        // ⬇️ pindahkan data
-                        ServiceProses::create([
-                            'category_id'    => $record->category_id,
-                            'data_client_id' => $record->data_client_id,
-                            'nama_barang'    => $record->nama_barang,
-                            'nomor_surat'    => $record->nomor_surat,
-                            'qrcode'         => $record->qrcode,
-                            'tanggal_masuk'  => $record->tanggal_masuk,
-                            'kerusakan'      => $record->kerusakan,
-                            'perlengkapan'   => $record->perlengkapan,
-                            'keterangan'     => $record->keterangan,
-                            'token'          => $record->token,
-
-                            // Format harus ARRAY OF ARRAYS agar bisa dibaca Repeater
-                            'log_status'     => [
-                                [
-                                    'status'     => 'Proses Cek',
-                                    'tanggal'    => now()->toDateTimeString(),
-                                    'keterangan' => 'Unit mulai dikerjakan oleh teknisi.',
-                                ]
-                            ],
-
-                            'user_id'        => auth()->id(),
-                        ]);
-
-                        // ⬇️ hapus dari ServiceMasuk
-                        $record->delete();
-                    }),
-
-                Tables\Actions\Action::make('print')
-                    ->label('Print')
-                    ->icon('heroicon-o-printer')
-                    ->color('info')
-                    ->button()
-                    ->url(fn($record) => route('service.print', $record->id))
-                    ->openUrlInNewTab(),
-
-                Tables\Actions\Action::make('whatsapp')
-                    ->label('Chat Dia')
-                    ->button()
-                    ->icon('heroicon-o-chat-bubble-left-right')
-                    ->color('success')
-                    ->url(function ($record) {
-                        // 1. Ambil data dari relasi
-                        $client = $record->dataClient;
-                        $categoryName = $record->category->category ?? 'Unit';
-
-                        // 2. Format Kerusakan & Perlengkapan (Cek jika array atau string)
-                        $kerusakanText = is_array($record->kerusakan) ? implode(', ', $record->kerusakan) : ($record->kerusakan ?? '-');
-                        $perlengkapanText = is_array($record->perlengkapan) ? implode(', ', $record->perlengkapan) : ($record->perlengkapan ?? '-');
-
-                        // 3. Link Tracking
-                        $linkTracking = url("/tracking/{$record->token}");
-
-                        // 4. Susun Pesan
-                        $pesan = "Asallamuallaikum *{$client->nama}*\n\n";
-                        $pesan .= "Service anda sudah kami terima. Berikut rincian unit anda:\n\n";
-
-                        $pesan .= "Unit: *{$categoryName} {$record->nama_barang}*\n";
-                        $pesan .= "No. Surat: {$record->nomor_surat}\n";
-                        $pesan .= "Trouble: {$kerusakanText}\n";
-                        $pesan .= "Kelengkapan: {$perlengkapanText}\n";
-                        $pesan .= "Tracking: {$linkTracking}\n";
-                        $pesan .= "----------------------------\n\n";
-
-                        $pesan .= "Untuk pengambilan unit akan kami infokan kembali dengan QR Code pengambilan.\n\n";
-                        $pesan .= "Hormat kami,\n*Acegroup Service Center*";
-
-                        // 5. Format Nomor WA (Ubah 0 jadi 62)
-                        $nomor_wa = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $client->nomor_wa));
-
-                        // 6. Return Link WhatsApp
-                        return "https://api.whatsapp.com/send?phone={$nomor_wa}&text=" . urlencode($pesan);
-                    })
-                    ->openUrlInNewTab(),
-
 
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\ViewAction::make()
