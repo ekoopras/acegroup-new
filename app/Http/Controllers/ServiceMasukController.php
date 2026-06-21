@@ -8,10 +8,24 @@ use Illuminate\Http\Request;
 
 class ServiceMasukController extends Controller
 {
+    // public function print(ServiceMasuk $service)
+    // {
+    //     return view('pdf.service', compact('service'));
+    // }
+
     public function print(ServiceMasuk $service)
     {
         return view('pdf.service', compact('service'));
     }
+
+    // 🛠️ Tambahkan fungsi baru ini untuk Service Proses
+    public function printProses(ServiceProses $service)
+    {
+        // Kirim data $service (yang berisi model ServiceProses) ke view PDF yang sama
+        return view('pdf.service', compact('service'));
+    }
+
+
 
     public function track($token)
     {

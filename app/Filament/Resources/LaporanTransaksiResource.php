@@ -19,7 +19,6 @@ class LaporanTransaksiResource extends Resource
     protected static ?string $model = LaporanTransaksi::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static ?string $navigationGroup = 'Data';
     protected static ?string $navigationLabel = 'Laporan Nota';
 
 
@@ -35,46 +34,43 @@ class LaporanTransaksiResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('tanggal')
-                    ->label('Waktu Transaksi')
-                    ->dateTime('d M Y H:i')
-                    ->sortable(),
-
-                TextColumn::make('nomor_surat')
-                    ->label('Surat Terima')
+                TextColumn::make('nama_pelanggan')
+                    ->label('Nama pelanggan')
                     ->searchable()
                     ->copyable(),
+
+                Tables\Columns\TextColumn::make('nama_barang')
+                    ->label('Barang')
+                    // 🚀 TAMPILAN: Menggabungkan "Kategori" + "Nama Barang" (Contoh: Laptop Asus)
+                    ->formatStateUsing(function ($state, $record) {
+                        $kategori = $record->category->category ?? '';
+                        return trim("{$kategori} {$state}");
+                    })
+                    // 🚀 SEARCH: Memaksa Filament agar bisa mencari berdasarkan kolom nama_barang DAN kategori sekaligus
+                    ->searchable(query: function ($query, string $search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('nama_barang', 'like', "%{$search}%")
+                                ->orWhereHas('category', function ($subQuery) use ($search) {
+                                    $subQuery->where('category', 'like', "%{$search}%");
+                                });
+                        });
+                    }),
+
+                TextColumn::make('tanggal')
+                    ->label('Waktu Transaksi')
+                    ->dateTime('d M Y')
+                    ->sortable(),
 
                 TextColumn::make('nomor_nota')
                     ->label('Nomor Nota')
                     ->searchable()
                     ->copyable(),
 
-                TextColumn::make('nama_pelanggan')
-                    ->label('Nama pelanggan')
-                    ->searchable()
-                    ->copyable(),
-
-                TextColumn::make('nama_barang')
-                    ->label('Unit Barang')
-                    ->description(fn($record) => "Kategori: " . ($record->category->category ?? '-'))
-                    ->searchable(),
-
-                TextColumn::make('teknisi')
-                    ->label('Tim Teknisi')
-                    ->badge()
-                    ->separator(', ')
-                    ->color('success'),
 
                 TextColumn::make('total_bayar')
                     ->label('Total Pembayaran')
-                    ->money('IDR')
+                    ->money('IDR', locale: 'id')
                     ->sortable(),
-                // ->summarize(
-                //     \Filament\Tables\Columns\Summarizers\Sum::make()
-                //         ->label('Total Omzet')
-                //         ->money('IDR')
-                // ),
 
                 TextColumn::make('metode_bayar')
                     ->label('Metode')
@@ -85,7 +81,37 @@ class LaporanTransaksiResource extends Resource
                         'transfer' => 'info',
                         default => 'gray',
                     }),
+
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->state(function ($record) {
+                        $logs = $record->log_status;
+                        if (is_string($logs)) {
+                            $logs = json_decode($logs, true);
+                        }
+                        if (!empty($logs) && is_array($logs)) {
+                            $lastLog = end($logs);
+                            return $lastLog['status'] ?? 'Selesai';
+                        }
+                        return 'Selesai';
+                    })
+                    ->formatStateUsing(fn(string $state): string => trim($state))
+                    ->icon(fn(string $state): string => match (strtolower(trim($state))) {
+
+                        'selesai'     => 'heroicon-m-check-circle', // Ikon Sudah Jadi
+                        'cancel / gagal'   => 'heroicon-m-x-circle',     // Ikon Gagal
+                        default   => 'heroicon-m-information-circle',
+                    })
+                    // 🛠️ FIX WARNA: Diubah ke strtolower agar warna sinkron 100%
+                    ->color(fn(string $state): string => match (strtolower(trim($state))) {
+
+                        'selesai'     => 'success', // Hijau untuk Sukses Jadi
+                        'cancel / gagal'   => 'danger',  // Merah untuk Cancel Gagal
+                        default         => 'info',    // Biru jika tulisan di DB tidak kembar
+                    }),
             ])
+            ->defaultPaginationPageOption(50) // Set default awal ke 10 data
+            ->paginationPageOptions([50])
             ->filters([
                 //
             ])

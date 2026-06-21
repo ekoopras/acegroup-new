@@ -42,6 +42,12 @@
                             @endif
                         </p>
                     </div>
+                    <div>
+                        <p class="text-[10px] text-slate-400 uppercase font-bold">Tanggal Masuk</p>
+                        <p class="text-slate-700">
+                            {{ \Carbon\Carbon::parse($item->tanggal_masuk)->translatedFormat('d/m/Y') }}
+                        </p>
+                    </div>
                     <div class="col-span-2">
                         <p class="text-[10px] text-slate-400 uppercase font-bold">Perlengkapan</p>
                         <p class="text-slate-600 italic">

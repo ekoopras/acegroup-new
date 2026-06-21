@@ -33,56 +33,13 @@ class ServiceProsesResource extends Resource
 
     protected static ?string $navigationLabel = 'Service Proses';
     protected static ?string $pluralLabel = 'Service Proses';
-    protected static ?string $navigationGroup = 'Transaksi';
+    protected static ?string $navigationGroup = 'Data Service';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-
-                Section::make('Log Perkembangan')
-                    ->description('Tambahkan riwayat pengecekan dan pengerjaan di sini')
-                    ->schema([
-                        Repeater::make('log_status')
-                            ->label('Update Progres')
-                            ->schema([
-                                Select::make('status')
-                                    ->options([
-                                        'Proses Cek' => 'Proses Cek',
-                                        'Pending' => 'Pending (Menunggu Part/Konfirmasi)',
-                                        'Deal' => 'Deal (Pengerjaan Disetujui)',
-                                        'Proses Pengerjaan' => 'Proses Pengerjaan',
-                                        'Trial' => 'Trial',
-                                        'Selesai' => 'Selesai',
-                                    ])
-                                    ->required()
-                                    ->native(false),
-
-                                DateTimePicker::make('tanggal')
-                                    ->default(now())
-                                    ->required(),
-
-                                Select::make('teknisi_id')
-                                    ->label('Teknisi')
-                                    ->options(User::all()->pluck('name', 'id')) // Mengambil nama dari UserResource
-                                    ->default(auth()->id())
-                                    ->searchable()
-                                    ->native(false),
-
-                                Textarea::make('keterangan')
-                                    ->placeholder('Contoh: Sedang mengganti IC Power...')
-                                    ->rows(2)
-                                    ->columnSpanFull(),
-
-
-                            ])
-                            ->columns(3)
-                            ->collapsible() // Bisa diciutkan agar rapi
-                            ->cloneable() // Mempermudah teknisi jika keterangan mirip
-                            ->addActionLabel('Tambah Update Baru')
-                            ->reorderableWithButtons(), // Urutan bisa diatur
-                    ])
-
+                //
             ]);
     }
 
@@ -90,114 +47,58 @@ class ServiceProsesResource extends Resource
     {
         return $table
             ->columns([
-                // Tables\Columns\TextColumn::make('barang')
-                //     ->label('Barang')
-                //     ->html()
-                //     ->getStateUsing(
-                //         fn($record) =>
-                //         '<strong>' . e($record->category->category) . '</strong><br>' .
-                //             e($record->nama_barang)
-                //     )
-                //     ->searchable(),
-
-                Tables\Columns\TextColumn::make('category.category')
-                    ->searchable(),
-
-                Tables\Columns\TextColumn::make('nama_barang')
+                Tables\Columns\TextColumn::make('nomor_surat')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('dataClient.nama')
                     ->label('Nama Client')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('tanggal_masuk')
-                    ->label('Masuk')
-                    ->date('d M Y')
-                    ->badge()
-                    ->sortable(),
 
-                Tables\Columns\TextColumn::make('kerusakan')
-                    ->label('Daftar Kerusakan')
-                    ->badge()
-                    ->color('danger')
-                    ->listWithLineBreaks()
-                    ->wrap(),
-
-                Tables\Columns\TextColumn::make('log_status')
-                    ->label('Status Terakhir')
-                    ->badge()
-                    ->getStateUsing(function ($record) {
-                        // Mengambil array log_status
-                        $logs = $record->log_status;
-
-                        // Pastikan logs adalah array dan tidak kosong
-                        if (is_array($logs) && !empty($logs)) {
-                            // Mengambil elemen terakhir dari array
-                            $lastLog = end($logs);
-                            return $lastLog['status'] ?? '-';
-
-                            $teknisiName = User::find($lastLog['teknisi_id'])?->name ?? 'No Name';
-                            return "$status ($teknisiName)";
-                        }
-
-                        return 'Belum ada status';
+                Tables\Columns\TextColumn::make('nama_barang')
+                    ->label('Barang')
+                    // 🚀 TAMPILAN: Menggabungkan "Kategori" + "Nama Barang" (Contoh: Laptop Asus)
+                    ->formatStateUsing(function ($state, $record) {
+                        $kategori = $record->category->category ?? '';
+                        return trim("{$kategori} {$state}");
                     })
-                    ->color(fn(string $state): string => match ($state) {
-                        'Proses Cek', 'Proses Pengerjaan' => 'warning',
-                        'Pending' => 'danger',
-                        'Deal', 'Selesai' => 'success',
-                        default => 'gray',
-                    })
-                    // Opsional: Menampilkan keterangan terakhir di bawah status sebagai info tambahan
-                    ->description(function ($record) {
-                        $logs = $record->log_status;
-                        if (is_array($logs) && !empty($logs)) {
-                            $lastLog = end($logs);
-                            return $lastLog['keterangan'] ?? '';
-                        }
-                        return null;
-                    })
-                    ->searchable(),
-
-                Tables\Columns\TextColumn::make('teknisi_terakhir')
-                    ->label('Teknisi')
-                    ->badge()
-                    ->color('success')
-                    ->getStateUsing(function ($record) {
-                        $logs = $record->log_status;
-                        if (is_array($logs) && !empty($logs)) {
-                            $lastLog = end($logs);
-                            // Ambil ID teknisi dari log terakhir
-                            $teknisiId = $lastLog['teknisi_id'] ?? null;
-
-                            if ($teknisiId) {
-                                return \App\Models\User::find($teknisiId)?->name ?? 'Anonim';
-                            }
-                        }
-                        return 'Belum Ditentukan';
+                    // 🚀 SEARCH: Memaksa Filament agar bisa mencari berdasarkan kolom nama_barang DAN kategori sekaligus
+                    ->searchable(query: function ($query, string $search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('nama_barang', 'like', "%{$search}%")
+                                ->orWhereHas('category', function ($subQuery) use ($search) {
+                                    $subQuery->where('category', 'like', "%{$search}%");
+                                });
+                        });
                     }),
 
-                // Tables\Columns\TextColumn::make('token')
-                //     ->label('Tracking Link')
-                //     ->formatStateUsing(fn($state) => route('tracking.check', ['token' => $state]))
-                //     ->copyable() // Agar bisa diklik untuk copy link
-                //     ->color('primary')
-                //     ->icon('heroicon-o-link'),
+                Tables\Columns\TextColumn::make('dataClient.nomor_wa')
+                    ->label('whatsapp')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('tanggal_masuk')
+                    ->label('Masuk')
+                    ->date('d/m/Y')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Teknisi')
+                    ->badge()
+                    ->color('success'),
 
 
             ])
+            ->defaultPaginationPageOption(50) // Set default awal ke 10 data
+            ->paginationPageOptions([50])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
-                ])
-                    ->label('Pilihan') // Mengubah tulisan tombol utama (opsional)
-                    ->icon('heroicon-m-ellipsis-vertical') // Icon titik tiga vertikal (opsional)
-                    ->color('gray') // Warna tombol utama (opsional)
-                    ->tooltip('Aksi Data'),
+                // Tables\Actions\EditAction::make()
+                //     ->label('')
+                //     ->color('success')
+                //     ->button(),
+
             ])
 
             ->bulkActions([
@@ -219,7 +120,7 @@ class ServiceProsesResource extends Resource
         return [
             'index' => Pages\ListServiceProses::route('/'),
             //'create' => Pages\CreateServiceProses::route('/create'),
-            //'edit' => Pages\EditServiceProses::route('/{record}/edit'),
+            'edit' => Pages\EditServiceProses::route('/{record}/edit'),
         ];
     }
 

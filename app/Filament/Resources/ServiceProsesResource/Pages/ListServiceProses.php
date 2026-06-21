@@ -37,6 +37,7 @@ class ListServiceProses extends ListRecords
 
         return [
             'proses' => Tab::make('Proses')
+                ->label('Proses Cek')
                 ->query(fn($query) => $query->whereRaw(
                     'JSON_UNQUOTE(JSON_EXTRACT(log_status, CONCAT("$[", JSON_LENGTH(log_status) - 1, "].status"))) IN (?, ?)',
                     ['Proses Cek', 'Proses Pengerjaan']
@@ -45,6 +46,7 @@ class ListServiceProses extends ListRecords
                 ->badgeColor('warning'),
 
             'pending' => Tab::make('Pending')
+                ->label('Pending')
                 ->query(fn($query) => $query->whereRaw(
                     'JSON_UNQUOTE(JSON_EXTRACT(log_status, CONCAT("$[", JSON_LENGTH(log_status) - 1, "].status"))) = ?',
                     ['Pending']
@@ -53,20 +55,14 @@ class ListServiceProses extends ListRecords
                 ->badgeColor('danger'),
 
             'deal' => Tab::make('Deal')
+                ->label('Deal Kerjakan')
                 ->query(fn($query) => $query->whereRaw(
                     'JSON_UNQUOTE(JSON_EXTRACT(log_status, CONCAT("$[", JSON_LENGTH(log_status) - 1, "].status"))) = ?',
-                    ['Deal']
+                    ['Deal Kerjakan']
                 ))
-                ->badge($getCount('Deal'))
+                ->badge($getCount('Deal Kerjakan'))
                 ->badgeColor('success'),
 
-            'trial' => Tab::make('Trial')
-                ->query(fn($query) => $query->whereRaw(
-                    'JSON_UNQUOTE(JSON_EXTRACT(log_status, CONCAT("$[", JSON_LENGTH(log_status) - 1, "].status"))) = ?',
-                    ['Trial']
-                ))
-                ->badge($getCount('Trial'))
-                ->badgeColor('info'),
         ];
     }
 }

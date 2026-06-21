@@ -38,7 +38,7 @@ class CategoryResource extends Resource
                         $set('slug', Str::slug($state))
                     ),
                 Forms\Components\Hidden::make('slug'),
-            ]);
+            ])->columns(1);
     }
 
     public static function table(Table $table): Table
@@ -52,12 +52,19 @@ class CategoryResource extends Resource
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
             ])
+            ->defaultPaginationPageOption(50) // Set default awal ke 10 data
+            ->paginationPageOptions([50])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->button(),
-                Tables\Actions\DeleteAction::make()->button(),
+                Tables\Actions\EditAction::make()
+                    ->label('')
+                    ->color('success')
+                    ->button(),
+                Tables\Actions\DeleteAction::make()
+                    ->label('')
+                    ->button(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

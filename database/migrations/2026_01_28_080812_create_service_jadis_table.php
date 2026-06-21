@@ -26,6 +26,7 @@ return new class extends Migration
             $table->unsignedBigInteger('total_biaya')->default(0);
             $table->string('token')->nullable();
             $table->json('log_status')->nullable();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
         });
     }

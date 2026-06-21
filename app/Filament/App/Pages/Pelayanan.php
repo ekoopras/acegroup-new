@@ -26,6 +26,8 @@ use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Forms\Components\Group;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class Pelayanan extends Page
 {
@@ -63,7 +65,7 @@ class Pelayanan extends Page
         return $form
             ->statePath('data')
             ->schema([
-                Section::make('Informasi Client')
+                Section::make('')
                     ->schema([
                         Select::make('search_client')
                             ->label('Cari Client')
@@ -94,6 +96,43 @@ class Pelayanan extends Page
                             })
                             ->columnSpanFull(),
 
+                        TextInput::make('nomor_wa')
+                            ->label('WhatsApp')
+                            ->tel()
+                            ->required()
+                            ->placeholder('Ketik nomor WA...')
+
+                            // MENGAKTIFKAN AUTO-COMPLETE: Mengambil semua nomor WA dari DB sebagai rekomendasi saat diketik
+                            ->datalist(DataClient::pluck('nomor_wa')->toArray())
+
+                            // 🚀 PERBAIKAN: Menggunakan onBlur agar Livewire tidak menimpa ketikan di tengah jalan
+                            ->live(onBlur: true)
+
+                            ->afterStateUpdated(function ($state, Set $set, Get $get) {
+                                if ($state) {
+                                    // Cari ke database apakah nomor yang dimasukkan sudah terdaftar
+                                    $client = DataClient::where('nomor_wa', $state)->first();
+
+                                    if ($client) {
+                                        $formattedName = ucwords($client->nama);
+
+                                        // FUNGSI 1: JIKA DATA ADA -> Nama langsung terisi otomatis
+                                        $set('nama', $formattedName);
+
+                                        // Sinkronkan nama ke dalam Repeater services
+                                        $services = $get('services') ?? [];
+                                        foreach ($services as $key => $service) {
+                                            $set("services.{$key}.nama_pelanggan", $formattedName);
+                                        }
+                                    } else {
+                                        // FUNGSI 2: JIKA DATA TIDAK ADA -> Biarkan nomor tetap tertulis,
+                                        // namun kosongkan form nama agar Anda bisa langsung mengisinya secara manual
+                                        $set('nama', '');
+                                    }
+                                }
+                            }),
+
+                        // 2. Form Nama Kontak
                         TextInput::make('nama')
                             ->label('Nama Kontak')
                             ->required()
@@ -101,20 +140,17 @@ class Pelayanan extends Page
                             ->live(debounce: 500)
                             ->afterStateUpdated(function (string $state, Set $set, Get $get) {
                                 $formattedName = ucwords($state);
+
+                                // Jika Anda menginput data baru secara manual, nama tetap disinkronkan ke Repeater
                                 $services = $get('services') ?? [];
                                 foreach ($services as $key => $service) {
                                     $set("services.{$key}.nama_pelanggan", $formattedName);
                                 }
                             }),
-
-                        TextInput::make('nomor_wa')
-                            ->label('WhatsApp')
-                            ->tel()
-                            ->required(),
                     ])->columns(2),
 
                 Repeater::make('services')
-                    ->label('Daftar Barang Service')
+                    ->label('')
                     ->defaultItems(1)
                     ->addActionLabel('+ Tambah Barang')
                     ->collapsible()
@@ -179,7 +215,7 @@ class Pelayanan extends Page
                                 ])
                             ])->columnSpan(['lg' => 2]),
 
-                            Section::make('Perlengkapan')
+                            Section::make('')
                                 ->compact()
                                 ->columnSpan(['lg' => 1])
                                 ->schema([
@@ -219,16 +255,29 @@ class Pelayanan extends Page
             );
 
             foreach ($this->data['services'] as $service) {
+                // 1. Simpan ke tabel ServiceMasuk
                 $createdService = ServiceMasuk::create([
-                    'category_id'   => $service['category_id'],
-                    'nama_pelanggan'   => $service['nama_pelanggan'],
-                    'nama_barang'   => $service['nama_barang'],
+                    'category_id'    => $service['category_id'],
+                    'nama_pelanggan' => $service['nama_pelanggan'],
+                    'nama_barang'    => $service['nama_barang'],
                     'data_client_id' => $currentClient->id,
-                    'tanggal_masuk' => $service['tanggal_masuk'],
-                    'kerusakan'     => $service['kerusakan'] ?? null,
-                    'perlengkapan'  => $service['perlengkapan'] ?? [],
-                    'keterangan'    => $service['keterangan'] ?? null,
-                    'token'         => $service['token'],
+                    'tanggal_masuk'  => $service['tanggal_masuk'],
+                    'kerusakan'      => $service['kerusakan'] ?? null,
+                    'perlengkapan'   => $service['perlengkapan'] ?? [],
+                    'keterangan'     => $service['keterangan'] ?? null,
+                    'token'          => $service['token'],
+                ]);
+
+                // 2. Simpan ke tabel DataService
+                \App\Models\DataService::create([
+                    'category_id'    => $service['category_id'],
+                    'data_client_id' => $currentClient->id,
+                    'nama_pelanggan' => $service['nama_pelanggan'],
+                    'nama_barang'    => $service['nama_barang'],
+                    'tanggal_masuk'  => $service['tanggal_masuk'],
+                    'kerusakan'      => $service['kerusakan'] ?? [], // Disimpan sebagai array/json sesuai struktur tabel
+                    'perlengkapan'   => $service['perlengkapan'] ?? [],  // Disimpan sebagai array/json sesuai struktur tabel
+                    'keterangan'     => $service['keterangan'] ?? null,
                 ]);
 
                 $this->serviceIds[] = $createdService->id;
@@ -242,8 +291,7 @@ class Pelayanan extends Page
         // Ambil data terbaru untuk WhatsApp
         $allServices = ServiceMasuk::with('category')->whereIn('id', $this->serviceIds)->get();
 
-        // Simpan URL WhatsApp ke properti agar bisa diakses Action modal
-        $this->waUrl = $this->sendWhatsapp($currentClient, $allServices);
+        $this->waUrl = '#';
 
         Notification::make()
             ->title('Berhasil')
@@ -273,67 +321,79 @@ class Pelayanan extends Page
                         ->label('🖨 Print Local')
                         ->action(function () {
                             foreach ($this->serviceIds as $id) {
-                                $this->js("window.open('" . route('service.print', $id) . "', '_blank');");
+                                $this->js("window.open('" . route('service.print.masuk', $id) . "', '_blank');");
                             }
                         }),
 
-                    Action::make('print_wifi')
-                        ->label('🖨 Print WiFi')
+                    Action::make('wa_admin1')
+                        ->label('📲 WhatsApp Admin 1')
                         ->color('success')
-                        ->action(function () {
+                        ->button()
+                        ->action(function (Action $action) {
+                            // 1. Cek apakah ada unit service yang baru disimpan di form ini
+                            if (empty($this->serviceIds)) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Gagal Kirim')
+                                    ->body('Data pelayanan belum tersimpan. Silakan simpan form terlebih dahulu.')
+                                    ->danger()->send();
+                                return;
+                            }
 
-                            $json = json_encode([
-                                'id' => $this->servicePreview->id,
-                                'nama_pelanggan' => $this->servicePreview->nama_pelanggan ?? '-',
-                                'nomor_wa' => $this->servicePreview->dataClient->nomor_wa ?? '-',
-                                'category' => $this->servicePreview->category->category ?? '-',
-                                'barang' => $this->servicePreview->nama_barang ?? '-',
-                                'tanggal_masuk' => $this->servicePreview->tanggal_masuk ?? '-',
-                                'kerusakan' => $this->servicePreview->kerusakan ?? '-',
-                                'keterangan' => $this->servicePreview->keterangan ?? '-',
-                                'perlengkapan' => $this->servicePreview->perlengkapan ?? '-',
-                                'pdf_url' => route('service.print', $this->servicePreview->id),
-                            ]);
+                            // 2. Ambil daftar unit service yang baru saja diinput di halaman ini
+                            $services = \App\Models\ServiceMasuk::whereIn('id', $this->serviceIds)->get();
 
-                            $this->js("
-                                const data = $json;
+                            // 3. Ambil data client langsung dari relasi unit service pertama (pasti akurat & pas)
+                            $firstService = $services->first();
+                            $client = $firstService ? $firstService->dataClient : null;
 
-                                console.log('PRINT WIFI DATA:', data);
+                            if (!$client) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Gagal Kirim')
+                                    ->body('Data pelanggan tidak ditemukan.')
+                                    ->danger()->send();
+                                return;
+                            }
 
-                                fetch('http://192.168.1.111:5000/print', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(data)
-                                })
-                                .then(response => response.json())
-                                .then(result => {
+                            // 4. Jalankan fungsi Fonnte
+                            $this->sendWhatsapp($client, $services, config('services.fonnte.admin1'));
 
-                                    console.log('PRINT RESULT:', result);
-
-                                    if(result.status === 'success') {
-                                        alert('Print berhasil');
-                                    } else {
-                                        alert('Print gagal');
-                                    }
-
-                                })
-                                .catch(error => {
-
-                                    console.error('PRINT ERROR:', error);
-
-                                    alert('Tidak dapat terhubung ke STB / Printer');
-
-                                });
-                            ");
+                            $action->success();
                         }),
 
-                    Action::make('wa')
-                        ->label('📲 Kirim WhatsApp')
+                    Action::make('wa_admin2')
+                        ->label('📲 WhatsApp Admin 2')
                         ->color('success')
-                        ->url(fn() => $this->waUrl) // Menggunakan URL yang sudah digenerate di submit()
-                        ->openUrlInNewTab(),
+                        ->button()
+                        ->action(function (Action $action) {
+                            // 1. Cek apakah ada unit service yang baru disimpan di form ini
+                            if (empty($this->serviceIds)) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Gagal Kirim')
+                                    ->body('Data pelayanan belum tersimpan. Silakan simpan form terlebih dahulu.')
+                                    ->danger()->send();
+                                return;
+                            }
+
+                            // 2. Ambil daftar unit service yang baru saja diinput di halaman ini
+                            $services = \App\Models\ServiceMasuk::whereIn('id', $this->serviceIds)->get();
+
+                            // 3. Ambil data client langsung dari relasi unit service pertama (pasti akurat & pas)
+                            $firstService = $services->first();
+                            $client = $firstService ? $firstService->dataClient : null;
+
+                            if (!$client) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Gagal Kirim')
+                                    ->body('Data pelanggan tidak ditemukan.')
+                                    ->danger()->send();
+                                return;
+                            }
+
+                            // 4. Jalankan fungsi Fonnte
+                            $this->sendWhatsapp($client, $services, config('services.fonnte.admin2'));
+
+                            $action->success();
+                        })
                 ])
                 ->modalContent(fn() => view('filament.service.preview', [
                     'service' => $this->servicePreview,
@@ -342,7 +402,7 @@ class Pelayanan extends Page
     }
 
 
-    private function sendWhatsapp($client, $services): string
+    private function sendWhatsapp($client, $services, string $tokenFonnte): void
     {
         // Pastikan berupa array/koleksi yang bisa di-loop
         $items = $services ?? [];
@@ -370,10 +430,8 @@ class Pelayanan extends Page
         $pesan = "Asallamuallaikum *{$namaPelanggan}*\n\n";
         $pesan .= "Service anda sudah kami terima. Berikut daftar unit anda:\n\n";
 
-        // 3. 🛠️ PERULANGAN BARANG (Hanya bagian ini yang akan diulang-ulang sesuai jumlah barang)
+        // 3. 🛠️ PERULANGAN BARANG (Menggunakan loop murni kodemu)
         foreach ($items as $index => $item) {
-
-            // Cek apakah $item berbentuk array atau object (Model) agar tidak memicu error baru
             $isArr = is_array($item);
 
             $categoryName = $isArr
@@ -382,22 +440,30 @@ class Pelayanan extends Page
 
             $namaBarang = $isArr ? ($item['nama_barang'] ?? '-') : ($item->nama_barang ?? '-');
 
+            $tglMasukRaw = $isArr ? ($item['tanggal_masuk'] ?? null) : ($item->tanggal_masuk ?? null);
+            $tglMasukText = $tglMasukRaw
+                ? \Carbon\Carbon::parse($tglMasukRaw)->translatedFormat('d/m/Y')
+                : '-';
+
             $kerusakan = $isArr ? ($item['kerusakan'] ?? '-') : ($item->kerusakan ?? '-');
             $kerusakanText = is_array($kerusakan) ? implode(', ', $kerusakan) : $kerusakan;
 
             $perlengkapan = $isArr ? ($item['perlengkapan'] ?? '-') : ($item->perlengkapan ?? '-');
             $perlengkapanText = is_array($perlengkapan) ? implode(', ', $perlengkapan) : $perlengkapan;
+            $perlengkapanText = str_replace('_', ' ', $perlengkapanText);
+            $perlengkapanText = ucwords($perlengkapanText);
 
-            $token = $isArr ? ($item['token'] ?? '') : ($item->token ?? '');
-            $linkTracking = url("/tracking/{$token}");
+            // $token = $isArr ? ($item['token'] ?? '') : ($item->token ?? '');
+            // $linkTracking = url("/tracking/{$token}");
 
             $no = $index + 1;
             $pesan .= "*No. {$no}*\n";
             $pesan .= "Unit: {$categoryName} {$namaBarang}\n";
+            $pesan .= "Tgl Masuk: {$tglMasukText}\n";
             $pesan .= "Trouble: {$kerusakanText}\n";
             $pesan .= "Kelengkapan: {$perlengkapanText}\n";
-            $pesan .= "Tracking: {$linkTracking}\n";
-            $pesan .= "----------------------------\n";
+            // $pesan .= "Tracking: {$linkTracking}\n";
+            $pesan .= "-----------------------------------\n";
         }
 
         // 4. penutup pesan (Hanya muncul 1x di paling bawah)
@@ -405,8 +471,40 @@ class Pelayanan extends Page
         $pesan .= "Hormat kami,\n*Acegroup Service Center*";
 
         // Nomor WA tujuan
-        $nomor_wa = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $client->nomor_wa));
+        $nomor_wa = preg_replace('/[^0-9]/', '', $client->nomor_wa);
+        if (str_starts_with($nomor_wa, '0')) {
+            $nomor_wa = '62' . substr($nomor_wa, 1);
+        }
 
-        return "https://api.whatsapp.com/send?phone={$nomor_wa}&text=" . urlencode($pesan);
+        // 5. 🚀 HIT API FONNTE & NOTIFIKASI
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => $tokenFonnte, // 🛠️ GANTI ENV LAMA DENGAN VARIABEL INI
+            ])->timeout(10)->post('https://api.fonnte.com/send', [
+                'target'      => $nomor_wa,
+                'message'     => $pesan,
+                'countryCode' => '62',
+            ]);
+
+            $result = $response->json();
+
+            if (isset($result['status']) && $result['status'] === true) {
+                \Filament\Notifications\Notification::make()
+                    ->title('WhatsApp Terkirim')
+                    ->body('Nota tanda terima berhasil dikirim otomatis melalui Fonnte.')
+                    ->success()->send();
+            } else {
+                \Filament\Notifications\Notification::make()
+                    ->title('WhatsApp Gagal')
+                    ->body('Fonnte gagal memproses pesan. Periksa kuota atau token Anda.')
+                    ->danger()->send();
+            }
+        } catch (\Exception $e) {
+            Log::error('Fonnte Error: ' . $e->getMessage());
+            \Filament\Notifications\Notification::make()
+                ->title('WhatsApp Gagal')
+                ->body('Terjadi kesalahan jaringan server API.')
+                ->danger()->send();
+        }
     }
 }

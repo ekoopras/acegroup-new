@@ -49,7 +49,9 @@ class AppPanelProvider extends PanelProvider
         </script>
     '
             )
-
+            ->brandName('ACEGROUP')
+            ->sidebarWidth('13rem')
+            ->topNavigation()
             ->login()
             ->colors([
                 'primary' => Color::Amber,
@@ -62,7 +64,6 @@ class AppPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/App/Widgets'), for: 'App\\Filament\\App\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

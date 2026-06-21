@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'fonnte' => [
+        'admin1' => env('FONNTE_TOKEN_ADMIN1'),
+        'admin2' => env('FONNTE_TOKEN_ADMIN2'),
+    ],
+
 ];

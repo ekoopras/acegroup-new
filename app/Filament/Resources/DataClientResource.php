@@ -6,6 +6,8 @@ use App\Filament\Resources\DataClientResource\Pages;
 use App\Filament\Resources\DataClientResource\RelationManagers;
 use App\Models\DataClient;
 use Filament\Forms;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -26,16 +28,22 @@ class DataClientResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('nama')
-                    ->label('Nama Client')
-                    ->required()
-                    ->maxLength(100),
+                Section::make('')
+                    ->schema([
+                        Grid::make(2)->schema([
+                            Forms\Components\TextInput::make('nama')
+                                ->label('Nama Client')
+                                ->required()
+                                ->maxLength(100),
 
-                Forms\Components\TextInput::make('nomor_wa')
-                    ->label('Nomor WhatsApp')
-                    ->required()
-                    ->tel()
-                    ->helperText('Gunakan format 628xxxx'),
+                            Forms\Components\TextInput::make('nomor_wa')
+                                ->label('Nomor WhatsApp')
+                                ->required()
+                                ->tel(),
+                        ]),
+                    ]),
+
+
             ]);
     }
 
@@ -57,12 +65,20 @@ class DataClientResource extends Resource
                     ->label('Terdaftar')
                     ->date('d M Y'),
             ])
+            ->defaultPaginationPageOption(50) // Set default awal ke 10 data
+            ->paginationPageOptions([50])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->button()->label('LogService'),
-                Tables\Actions\DeleteAction::make()->button(),
+                Tables\Actions\EditAction::make()
+                    ->button()
+                    ->label('')
+                    ->color('success')
+                    ->icon('heroicon-o-clock'),
+                Tables\Actions\DeleteAction::make()
+                    ->label('')
+                    ->button(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

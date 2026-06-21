@@ -141,7 +141,6 @@ class Pengambilan extends Page
                 'tanggal'        => now(),
                 'total_bayar'    => $unit->total_biaya,
                 'metode_bayar'   => $metode,
-                'teknisi'        => $namaTeknisi ?: 'Staff',
             ]);
 
             LogService::create([

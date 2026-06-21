@@ -21,7 +21,7 @@ class ServiceJadiResource extends Resource
     protected static ?int $navigationSort = 3;
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
-    protected static ?string $navigationGroup = 'Transaksi';
+    protected static ?string $navigationGroup = 'Data Service';
 
     public static function form(Form $form): Form
     {
@@ -35,103 +35,90 @@ class ServiceJadiResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('nomor_surat')->searchable(),
 
-                Tables\Columns\TextColumn::make('nama_barang'),
+                Tables\Columns\TextColumn::make('nomor_surat')->searchable(),
 
                 Tables\Columns\TextColumn::make('dataClient.nama')
                     ->label('Nama Client')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('nama_barang')
+                    ->label('Barang')
+                    // 🚀 TAMPILAN: Menggabungkan "Kategori" + "Nama Barang" (Contoh: Laptop Asus)
+                    ->formatStateUsing(function ($state, $record) {
+                        $kategori = $record->category->category ?? '';
+                        return trim("{$kategori} {$state}");
+                    })
+                    // 🚀 SEARCH: Memaksa Filament agar bisa mencari berdasarkan kolom nama_barang DAN kategori sekaligus
+                    ->searchable(query: function ($query, string $search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('nama_barang', 'like', "%{$search}%")
+                                ->orWhereHas('category', function ($subQuery) use ($search) {
+                                    $subQuery->where('category', 'like', "%{$search}%");
+                                });
+                        });
+                    }),
+
+                Tables\Columns\TextColumn::make('dataClient.nomor_wa')
+                    ->label('whatsapp')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('total_biaya')
                     ->money('IDR', locale: 'id')
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('tanggal_masuk')
+                    ->label('Unit Masuk')
+                    ->date('d/m/Y')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('tanggal_selesai')
-                    ->date(),
+                    ->label('Unit Jadi')
+                    ->date('d/m/Y')
+                    ->sortable(),
 
-                Tables\Columns\TextColumn::make('teknisi_tim')
-                    ->label('Teknisi Terlibat')
+                Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color('info')
-                    ->getStateUsing(function ($record) {
+                    ->state(function ($record) {
                         $logs = $record->log_status;
-
-                        if (is_array($logs) && !empty($logs)) {
-                            // 1. Ambil semua teknisi_id dari tiap baris log
-                            $userIds = collect($logs)
-                                ->pluck('teknisi_id')
-                                ->filter()
-                                ->unique();
-
-                            // 2. Ambil nama user berdasarkan ID tersebut
-                            return \App\Models\User::whereIn('id', $userIds)
-                                ->pluck('name')
-                                ->toArray();
+                        if (is_string($logs)) {
+                            $logs = json_decode($logs, true);
                         }
-
-                        return null;
+                        if (!empty($logs) && is_array($logs)) {
+                            $lastLog = end($logs);
+                            return $lastLog['status'] ?? 'Selesai';
+                        }
+                        return 'Selesai';
                     })
-                    ->separator(','), // Memisahkan array menjadi badge-badge terpisah
+                    ->formatStateUsing(fn(string $state): string => trim($state))
+                    ->icon(fn(string $state): string => match (strtolower(trim($state))) {
 
-                // Tables\Columns\ViewColumn::make('qrcode')
-                //     ->label('QR')
-                //     ->view('filament.tables.qrcode')
-                //     //->tooltip(fn($record) => $record->nomor_surat)
-                //     ->alignCenter(),
+                        'selesai'     => 'heroicon-m-check-circle', // Ikon Sudah Jadi
+                        'cancel / gagal'   => 'heroicon-m-x-circle',     // Ikon Gagal
+                        default   => 'heroicon-m-information-circle',
+                    })
+                    // 🛠️ FIX WARNA: Diubah ke strtolower agar warna sinkron 100%
+                    ->color(fn(string $state): string => match (strtolower(trim($state))) {
 
+                        'selesai'     => 'success', // Hijau untuk Sukses Jadi
+                        'cancel / gagal'   => 'danger',  // Merah untuk Cancel Gagal
+                        default         => 'info',    // Biru jika tulisan di DB tidak kembar
+                    }),
+
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Teknisi')
+                    ->badge()
+                    ->color('success'),
 
             ])
+            ->defaultPaginationPageOption(50) // Set default awal ke 10 data
+            ->paginationPageOptions([50])
             ->filters([
                 //
             ])
             ->actions([
-                Action::make('chat_konfirmasi')
-                    ->label('Kabarin Dia')
-                    ->icon('heroicon-o-chat-bubble-left-right')
-                    ->color('success')
-                    ->url(function ($record) {
-                        // 1. Ambil data dari record
-                        $namaPelanggan = $record->dataClient->nama ?? 'Pelanggan';
-                        $nomorWa = $record->dataClient->nomor_wa ?? '';
-                        $total = $record->total_biaya ?? 0; // Pastikan nama kolom biaya sesuai
-                        $linkTracking = url("/tracking/{$record->token}"); // Sesuaikan route tracking kamu
 
-                        // 2. Format Nomor WA
-                        $formattedNumber = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $nomorWa));
-
-                        // 3. Susun Pesan sesuai format kemarin
-                        $pesan = "Asallamuallaikum {$namaPelanggan}\n\n" .
-                            "Unit service Anda telah *SELESAI* dikerjakan.\n\n" .
-                            "Unit: {$record->nama_barang}\n" .
-                            "Total Biaya: Rp " . number_format($total, 0, ',', '.') . "\n" .
-                            "Garansi: " . ($record->garansi == 'None' || !$record->garansi ? 'Tanpa Garansi' : $record->garansi) . "\n\n" .
-                            "Silakan ambil unit Anda dengan menunjukkan *QR CODE* pengambilan pada link berikut:\n" .
-                            "{$linkTracking}\n\n" .
-                            "Hormat kami,\nAcegroup Service Center";
-
-                        // 4. Return URL
-                        return "https://api.whatsapp.com/send?phone={$formattedNumber}&text=" . urlencode($pesan);
-                    })
-                    ->openUrlInNewTab()->button(),
-                //Tables\Actions\EditAction::make()->button(),
-                // Tables\Actions\DeleteAction::make()
-                //     ->action(function ($record) {
-
-                //         LogService::create([
-                //             'category_id'         => $record->category_id,
-                //             'data_client_id'      => $record->data_client_id,
-                //             'nama_barang'         => $record->nama_barang,
-                //             'tanggal_pengambilan' => now(),
-                //             'services'            => $record->services,
-                //             'total_biaya'         => $record->total_biaya,
-                //             'garansi'             => $record->garansi,
-                //         ]);
-
-                //         $record->delete();
-                //     })
-                //     ->requiresConfirmation()
-                //     ->button(),
+                //
 
             ])
             ->bulkActions([

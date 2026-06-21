@@ -25,6 +25,7 @@ return new class extends Migration
             $table->text('keterangan')->nullable();
             $table->json('log_status')->nullable();
             $table->string('token')->unique();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
         });
     }

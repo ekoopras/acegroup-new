@@ -25,7 +25,7 @@ class ServiceMasukResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-fire';
     protected static ?string $navigationLabel = 'Service Masuk';
     protected static ?string $pluralLabel = 'Service Masuk';
-    protected static ?string $navigationGroup = 'Transaksi';
+    protected static ?string $navigationGroup = 'Data Service';
 
     public static function form(Form $form): Form
     {
@@ -154,46 +154,61 @@ class ServiceMasukResource extends Resource
                 Tables\Columns\TextColumn::make('nomor_surat')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('category.category')
-                    ->searchable(),
-
-                Tables\Columns\TextColumn::make('nama_barang')
-                    ->searchable(),
-
                 Tables\Columns\TextColumn::make('nama_pelanggan')
                     ->label('Nama Pelanggan')
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('nama_barang')
+                    ->label('Barang')
+                    // 🚀 TAMPILAN: Menggabungkan "Kategori" + "Nama Barang" (Contoh: Laptop Asus)
+                    ->formatStateUsing(function ($state, $record) {
+                        $kategori = $record->category->category ?? '';
+                        return trim("{$kategori} {$state}");
+                    })
+                    // 🚀 SEARCH: Memaksa Filament agar bisa mencari berdasarkan kolom nama_barang DAN kategori sekaligus
+                    ->searchable(query: function ($query, string $search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('nama_barang', 'like', "%{$search}%")
+                                ->orWhereHas('category', function ($subQuery) use ($search) {
+                                    $subQuery->where('category', 'like', "%{$search}%");
+                                });
+                        });
+                    }),
 
                 Tables\Columns\TextColumn::make('tanggal_masuk')
                     ->label('Masuk')
                     ->date('d/m/Y')
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('dataClient.nomor_wa')
+                    ->label('Whatsapp')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('kerusakan')
                     ->label('Daftar Kerusakan')
                     ->badge()
-                    ->color('danger')
+                    ->color('success')
                     ->listWithLineBreaks()
                     ->wrap(),
 
             ])
+            ->defaultPaginationPageOption(50) // Set default awal ke 10 data
+            ->paginationPageOptions([50])
             ->filters([
                 //
             ])
             ->actions([
-
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ViewAction::make()
-                        ->label('')
-                        ->button(),
-                    Tables\Actions\EditAction::make()
-                        ->label('')
-                        ->button(),
-                    Tables\Actions\DeleteAction::make()
-                        ->label('')
-                        ->button(),
-                ])->label(''),
-
+                Tables\Actions\ViewAction::make()
+                    ->label('')
+                    ->color('primary')
+                    ->button(),
+                Tables\Actions\EditAction::make()
+                    ->label('')
+                    ->color('success')
+                    ->button(),
+                Tables\Actions\DeleteAction::make()
+                    ->label('')
+                    ->button(),
 
             ])
             ->bulkActions([

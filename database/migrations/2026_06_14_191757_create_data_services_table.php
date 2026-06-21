@@ -11,17 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('laporan_transaksis', function (Blueprint $table) {
+        Schema::create('data_services', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained()->cascadeOnDelete();
             $table->foreignId('data_client_id')->constrained()->cascadeOnDelete();
             $table->string('nama_pelanggan');
-            $table->string('nomor_surat')->unique();
             $table->string('nama_barang');
-            $table->string('nomor_nota');
-            $table->dateTime('tanggal');
-            $table->decimal('total_bayar', 12, 2);
-            $table->string('metode_bayar');
+            $table->date('tanggal_masuk');
+            $table->json('kerusakan');
+            $table->json('perlengkapan')->nullable();
+            $table->text('keterangan')->nullable();
             $table->timestamps();
         });
     }
@@ -31,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('laporan_transaksis');
+        Schema::dropIfExists('data_services');
     }
 };

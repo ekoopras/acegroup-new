@@ -21,6 +21,7 @@ class ServiceJadi extends Model
         'total_biaya',
         'log_status',
         'token',
+        'user_id',
     ];
 
     protected $casts = [
@@ -40,5 +41,10 @@ class ServiceJadi extends Model
     public function dataClient()
     {
         return $this->belongsTo(DataClient::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

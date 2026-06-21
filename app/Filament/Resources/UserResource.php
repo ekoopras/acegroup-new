@@ -75,11 +75,19 @@ class UserResource extends Resource
                     ->formatStateUsing(fn($state) => Str::title($state)),
                 Tables\Columns\TextColumn::make('role'),
             ])
+            ->defaultPaginationPageOption(50) // Set default awal ke 10 data
+            ->paginationPageOptions([50])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->label('')
+                    ->button()
+                    ->color('success'),
+                Tables\Actions\DeleteAction::make()
+                    ->label('')
+                    ->button(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

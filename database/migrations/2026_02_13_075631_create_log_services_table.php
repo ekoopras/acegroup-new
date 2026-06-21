@@ -20,7 +20,6 @@ return new class extends Migration
             $table->date('tanggal_pengambilan');
             $table->json('services')->nullable();
             $table->unsignedBigInteger('total_biaya')->default(0);
-            $table->string('garansi')->nullable();
             $table->timestamps();
         });
     }
