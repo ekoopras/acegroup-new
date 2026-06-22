@@ -38,4 +38,4 @@ Route::get('/print/service/proses/{serviceProses}', function (ServiceProses $ser
     return app(ServiceMasukController::class)->printProses($serviceProses);
 })->name('service.print.proses');
 
-Route::get('/tracking/{token}', [ServiceMasukController::class, 'track'])->name('tracking.check');
+Route::get('/tracking/p/{token}', [ServiceMasukController::class, 'track'])->name('tracking.check');
