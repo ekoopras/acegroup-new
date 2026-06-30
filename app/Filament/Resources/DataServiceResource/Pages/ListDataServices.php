@@ -13,7 +13,12 @@ class ListDataServices extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            //Actions\CreateAction::make(),
+            Actions\Action::make('refresh')
+                ->label('Refresh')
+                ->icon('heroicon-m-arrow-path') // Icon panah berputar
+                ->color('success')
+                ->action(fn() => null),
         ];
     }
 }

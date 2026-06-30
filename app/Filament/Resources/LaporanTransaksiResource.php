@@ -20,6 +20,7 @@ class LaporanTransaksiResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationLabel = 'Laporan Nota';
+    protected static ?string $navigationGroup = 'Data';
 
 
     public static function form(Form $form): Form

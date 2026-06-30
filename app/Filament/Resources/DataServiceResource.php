@@ -18,8 +18,7 @@ class DataServiceResource extends Resource
     protected static ?string $model = DataService::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static ?string $navigationGroup = 'Data';
-
+    protected static ?string $navigationLabel = 'Data Service';
 
     public static function form(Form $form): Form
     {
@@ -62,7 +61,7 @@ class DataServiceResource extends Resource
                 Tables\Columns\TextColumn::make('kerusakan')
                     ->label('Daftar Kerusakan')
                     ->badge()
-                    ->color('danger')
+                    ->color('success')
                     ->listWithLineBreaks()
                     ->wrap(),
 
@@ -71,16 +70,25 @@ class DataServiceResource extends Resource
                     ->label('Tanggal Masuk'),
 
             ])
+            ->defaultSort('created_at', 'desc')
             ->defaultPaginationPageOption(50) // Set default awal ke 10 data
             ->paginationPageOptions([50])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                // Tables\Actions\EditAction::make()
+                //     ->label('')
+                //     ->color('success')
+                //     ->button(),
+
+                Tables\Actions\Action::make('print')
                     ->label('')
-                    ->color('success')
-                    ->button(),
+                    ->icon('heroicon-o-printer')
+                    ->color('info')
+                    ->button()
+                    ->url(fn($record) => route('service.print.masuk', $record->id))
+                    ->openUrlInNewTab(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
