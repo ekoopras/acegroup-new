@@ -87,7 +87,7 @@ class DataServiceResource extends Resource
                     ->icon('heroicon-o-printer')
                     ->color('info')
                     ->button()
-                    ->url(fn($record) => route('service.print.masuk', $record->id))
+                    ->url(fn($record) => route('service.print.dataservice', $record->id))
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([

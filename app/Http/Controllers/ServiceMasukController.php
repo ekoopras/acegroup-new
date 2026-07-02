@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DataService;
 use App\Models\ServiceMasuk;
 use App\Models\ServiceProses;
 use Illuminate\Http\Request;
@@ -25,7 +26,11 @@ class ServiceMasukController extends Controller
         return view('pdf.service', compact('service'));
     }
 
-
+    public function printDataService(DataService $service)
+    {
+        // Kirim data $service (yang berisi model ServiceProses) ke view PDF yang sama
+        return view('pdf.service', compact('service'));
+    }
 
     public function track($token)
     {

@@ -137,7 +137,7 @@ class Pelayanan extends Page
                             ->label('Nama Kontak')
                             ->required()
                             ->extraInputAttributes(['style' => 'text-transform: capitalize;'])
-                            ->live(debounce: 500)
+                            ->live(onBlur: true)
                             ->afterStateUpdated(function (string $state, Set $set, Get $get) {
                                 $formattedName = ucwords($state);
 

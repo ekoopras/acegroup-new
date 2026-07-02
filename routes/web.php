@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AndroidController;
 use App\Http\Controllers\ServiceMasukController;
+use App\Models\DataService;
 use App\Models\ServiceMasuk;
 use App\Models\ServiceProses;
 use App\Services\PrintService;
@@ -37,5 +38,11 @@ Route::get('/print/service/proses/{serviceProses}', function (ServiceProses $ser
 
     return app(ServiceMasukController::class)->printProses($serviceProses);
 })->name('service.print.proses');
+
+Route::get('/print/service/data-service/{dataService}', function (DataService $dataService) {
+    if (!Auth::check()) abort(404);
+
+    return app(ServiceMasukController::class)->printDataService($dataService);
+})->name('service.print.dataservice');
 
 Route::get('/tracking/{token}', [ServiceMasukController::class, 'track'])->name('tracking.check');
