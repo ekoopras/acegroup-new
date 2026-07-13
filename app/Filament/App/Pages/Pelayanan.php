@@ -101,34 +101,26 @@ class Pelayanan extends Page
                             ->tel()
                             ->required()
                             ->placeholder('Ketik nomor WA...')
-
-                            // MENGAKTIFKAN AUTO-COMPLETE: Mengambil semua nomor WA dari DB sebagai rekomendasi saat diketik
                             ->datalist(DataClient::pluck('nomor_wa')->toArray())
 
-                            // 🚀 PERBAIKAN: Menggunakan onBlur agar Livewire tidak menimpa ketikan di tengah jalan
-                            ->live(onBlur: true)
-
+                            // 🚀 PERBAIKAN 1: Gunakan live() biasa tanpa onBlur agar respon pencarian nomor lebih cepat 
+                            // dan tambahkan debounce agar Livewire menunggu Anda selesai mengetik sesaat (500ms)
+                            ->live(debounce: 500)
                             ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                 if ($state) {
-                                    // Cari ke database apakah nomor yang dimasukkan sudah terdaftar
                                     $client = DataClient::where('nomor_wa', $state)->first();
 
                                     if ($client) {
                                         $formattedName = ucwords($client->nama);
-
-                                        // FUNGSI 1: JIKA DATA ADA -> Nama langsung terisi otomatis
                                         $set('nama', $formattedName);
 
-                                        // Sinkronkan nama ke dalam Repeater services
                                         $services = $get('services') ?? [];
                                         foreach ($services as $key => $service) {
                                             $set("services.{$key}.nama_pelanggan", $formattedName);
                                         }
-                                    } else {
-                                        // FUNGSI 2: JIKA DATA TIDAK ADA -> Biarkan nomor tetap tertulis,
-                                        // namun kosongkan form nama agar Anda bisa langsung mengisinya secara manual
-                                        $set('nama', '');
                                     }
+                                    // 🚀 PERBAIKAN 2: JANGAN gunakan $set('nama', '') di sini jika data tidak ada!
+                                    // Menghapus baris else { $set('nama', ''); } mencegah form nama terosongkan tiba-tiba saat Anda sedang mengetik nama baru.
                                 }
                             }),
 
@@ -137,11 +129,13 @@ class Pelayanan extends Page
                             ->label('Nama Kontak')
                             ->required()
                             ->extraInputAttributes(['style' => 'text-transform: capitalize;'])
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(function (string $state, Set $set, Get $get) {
-                                $formattedName = ucwords($state);
 
-                                // Jika Anda menginput data baru secara manual, nama tetap disinkronkan ke Repeater
+                            // 🚀 PERBAIKAN 3: Ubah menjadi live(debounce: 500) agar perubahan nama ke repeater 
+                            // dikirim secara halus tanpa merusak atau memotong teks yang sedang Anda ketik murni di keyboard
+                            ->live(debounce: 800)
+                            ->afterStateUpdated(function (?string $state, Set $set, Get $get) {
+                                $formattedName = $state ? ucwords($state) : '';
+
                                 $services = $get('services') ?? [];
                                 foreach ($services as $key => $service) {
                                     $set("services.{$key}.nama_pelanggan", $formattedName);
