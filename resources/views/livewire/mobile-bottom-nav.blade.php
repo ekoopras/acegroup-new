@@ -1,5 +1,6 @@
+@if($showNav)
 <div>
-    <div class="md:hidden fixed bottom-0 left-0 z-40 w-full h-16 bg-white dark:bg-gray-900 border-gray-200 flex items-center justify-around px-1 shadow-lg">
+    <div class="md:hidden fixed bottom-0 left-0 z-30 w-full h-16 bg-white dark:bg-gray-900 border-t border-gray-200 flex items-center justify-around px-1 shadow-lg">
 
         @foreach($navItems as $item)
         <a href="{{ $item['url'] }}"
@@ -20,7 +21,7 @@
             </div>
 
             {{-- Label Teks --}}
-            <span class="relative z-10 text-[5px] tracking-tight mt-1"
+            <span class="relative z-10 text-[10px] tracking-tight mt-0.5 truncate px-1"
                 style="{{ $item['active'] ? 'color: rgb(var(--primary-600)); font-weight: 700;' : 'color: #9ca3af; font-weight: 500;' }}">
                 {{ $item['label'] }}
             </span>
@@ -43,3 +44,4 @@
         }
     </style>
 </div>
+@endif
