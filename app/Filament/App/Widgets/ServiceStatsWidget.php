@@ -13,6 +13,9 @@ class ServiceStatsWidget extends BaseWidget
     // Mengatur urutan agar tampil di bawah/di atas widget menu
     protected static ?int $sort = -1;
 
+    // Tambahkan baris ini untuk mematikan auto-refresh/realtime sepenuhnya
+    protected static ?string $pollingInterval = null;
+
     protected function getStats(): array
     {
         // 1. Count Total Unit Masuk (Antrian)
