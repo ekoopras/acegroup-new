@@ -2,6 +2,9 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\App\Pages\Dashboard;
+use App\Filament\App\Widgets\ServiceStatsWidget;
+use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -18,6 +21,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
 
 class AppPanelProvider extends PanelProvider
@@ -27,6 +31,18 @@ class AppPanelProvider extends PanelProvider
         return $panel
             ->id('app')
             ->path('app')
+            ->darkMode(false)
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_START,
+                fn(): string => Blade::render('
+                <div class="flex items-center gap-x-3 md:hidden pl-2">
+                    <img src="' . asset('ico.png') . '" alt="Logo" class="h-10 w-auto">
+                    <span class="text-md font-bold tracking-tight text-gray-900 dark:text-white">
+                        ACEGROUP APP
+                    </span>
+                </div>
+            '),
+            )
 
             ->renderHook(
                 'panels::head.end',
@@ -36,6 +52,17 @@ class AppPanelProvider extends PanelProvider
         <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
         <link rel="apple-touch-icon" href="' . asset('ico.png') . '">
         <link rel="manifest" href="' . url('/android/manifest.json') . '">
+
+        <!-- CSS Menyembunyikan Navigasi Bawaan Filament di Mobile -->
+        <style>
+            @media (max-width: 1023px) {
+                /* Sembunyikan tombol hamburger / sidebar toggle */
+                .fi-topbar .fi-topbar-nav-toggle-btn,
+                .fi-topbar button[x-on\:click*="sidebar"] {
+                    display: none !important;
+                }
+            }
+        </style>
 
         <script>
             if ("serviceWorker" in navigator) {
@@ -59,11 +86,13 @@ class AppPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/App/Resources'), for: 'App\\Filament\\App\\Resources')
             ->discoverPages(in: app_path('Filament/App/Pages'), for: 'App\\Filament\\App\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                //Pages\Dashboard::class,
+                Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/App/Widgets'), for: 'App\\Filament\\App\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
+                ServiceStatsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -79,5 +108,13 @@ class AppPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+    }
+
+    public function boot(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            fn(): string => Blade::render('@livewire(\'mobile-bottom-nav\')'),
+        );
     }
 }
