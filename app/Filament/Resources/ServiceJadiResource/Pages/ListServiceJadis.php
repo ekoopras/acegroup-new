@@ -14,6 +14,14 @@ class ListServiceJadis extends ListRecords
     {
         return [
             //Actions\CreateAction::make(),
+
+            // Action Print Semua Data Service Jadi
+            Actions\Action::make('print')
+                ->label('Cetak Laporan')
+                ->icon('heroicon-o-printer')
+                ->color('info')
+                ->openUrlInNewTab()
+                ->url(fn() => route('service-jadi.print')),
         ];
     }
 }

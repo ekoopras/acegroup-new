@@ -150,7 +150,9 @@ class ServiceMasukResource extends Resource
     {
         return $table
             ->columns([
-
+                Tables\Columns\TextColumn::make('no')
+                    ->label('No')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('nomor_surat')
                     ->searchable(),
 
@@ -195,7 +197,18 @@ class ServiceMasukResource extends Resource
             ->defaultPaginationPageOption(50) // Set default awal ke 10 data
             ->paginationPageOptions([50])
             ->filters([
-                //
+
+                Tables\Filters\SelectFilter::make('category_id')
+                    ->label('Kategori')
+                    // Mengambil pilihan opsi langsung dari relasi category (kolom 'category')
+                    ->relationship('category', 'category')
+                    // Mengaktifkan fitur pencarian di dropdown
+                    ->searchable()
+                    // Mengaktifkan pilihan ganda (multiple select)
+                    ->multiple()
+                    // Menampilkan jumlah kategori yang dipilih pada badge filter
+                    ->preload(),
+
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
