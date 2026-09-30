@@ -8,6 +8,7 @@ use App\Models\ServiceMasuk;
 use App\Models\ServiceProses;
 use App\Services\PrintService;
 use Filament\Http\Middleware\Authenticate;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
@@ -48,12 +49,18 @@ Route::get('/print/service/data-service/{dataService}', function (DataService $d
 
 Route::get('/tracking/{token}', [ServiceMasukController::class, 'track'])->name('tracking.check');
 
-Route::get('/service-masuk/print', function () {
-    $records = session('print_service_masuk_records', collect());
+Route::get('/service-masuk/print', function (Request $request) {
+    $ids = array_filter(explode(',', $request->query('ids', '')));
 
-    if ($records->isEmpty()) {
-        return 'Tidak ada data untuk dicetak.';
+    if (empty($ids)) {
+        return '<script>alert("Tidak ada data untuk dicetak."); window.close();</script>';
     }
+
+    // Ambil data dan pertahankan urutan ID dari tabel
+    $records = ServiceMasuk::with(['dataClient', 'category'])
+        ->whereIn('id', $ids)
+        ->orderByRaw('FIELD(id, ' . implode(',', $ids) . ')')
+        ->get();
 
     return view('print.service-masuk', compact('records'));
 })->name('service-masuk.print');

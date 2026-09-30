@@ -48,20 +48,22 @@ class ListServiceMasuks extends ListRecords
                     }, 'service-masuk-' . date('Y-m-d') . '.xlsx');
                 }),
 
-            // Action Print Data Terfilter
+
             Actions\Action::make('print')
                 ->label('Cetak Laporan')
                 ->icon('heroicon-o-printer')
                 ->color('info')
                 ->openUrlInNewTab()
-                ->action(function () {
-                    $records = $this->getTableQuery()
-                        ->with(['dataClient', 'category'])
-                        ->get();
+                ->url(function () {
+                    // Ambil ID data dengan urutan (sortable) yang sedang aktif di tabel
+                    $ids = $this->getTableQueryForExport()
+                        ->pluck('id')
+                        ->toArray();
 
-                    session()->put('print_service_masuk_records', $records);
-
-                    return redirect()->route('service-masuk.print');
+                    // Kirimkan ID yang sudah terurut ke route cetak
+                    return route('service-masuk.print', [
+                        'ids' => implode(',', $ids),
+                    ]);
                 }),
         ];
     }
