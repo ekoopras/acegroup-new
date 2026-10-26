@@ -77,8 +77,8 @@ class AppPanelProvider extends PanelProvider
     '
             )
             ->brandName('ACEGROUP')
-            ->sidebarWidth('13rem')
-            ->topNavigation()
+            ->sidebarWidth('11rem')
+            //->topNavigation()
             ->login()
             ->colors([
                 'primary' => Color::Amber,
